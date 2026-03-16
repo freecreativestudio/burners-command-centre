@@ -518,11 +518,13 @@ function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDep
 // 7. pushData() retries every 5s on failure
 // 8. ?reset=1 URL param clears all local state and forces fresh pull from server
 
-// Handle ?reset=1 — clear all local state before anything else runs
+// Handle ?reset=1 — clear all local state and reset D to defaults
 (function(){
   if (new URLSearchParams(window.location.search).get('reset') === '1') {
     localStorage.removeItem('burners_cc_v3');
     localStorage.removeItem('burners_cc_v3_sts');
+    // D was already loaded from localStorage before this IIFE ran — reset it now
+    D = defD();
     // Remove the ?reset=1 from URL without reloading
     const url = new URL(window.location.href);
     url.searchParams.delete('reset');
