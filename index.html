@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Burners Command Centre — free.studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--orange:#D4622B;--teal:#2BBAD4;--black:#111;--dark:#1A1A1A;--card:#222;--card2:#2A2A2A;--white:#F5F5F5;--muted:#888;--ok:#4CAF50;--warn:#FF9800;--bad:#E53935;--border:rgba(255,255,255,0.07);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Geist',system-ui,sans-serif;background:var(--black);color:var(--white);min-height:100vh;font-size:14px;}
+h1,h2,h3,.hdr-title{font-family:'Archivo Black','Impact',sans-serif;text-transform:uppercase;letter-spacing:1px;}
+.hdr{background:var(--dark);padding:14px 24px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--orange);}
+.hdr-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.hdr-title{font-size:1.3em;color:var(--white);}
+.hdr-title span{color:var(--orange);}
+.hdr-sub{font-size:.7em;color:var(--muted);font-weight:500;margin-top:2px;font-family:'Geist',sans-serif;text-transform:none;letter-spacing:0;}
+.live{background:var(--orange);color:#fff;padding:3px 10px;border-radius:3px;font-size:.65em;font-weight:700;animation:pulse 2s infinite;text-transform:uppercase;letter-spacing:1px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.nav{display:flex;gap:3px;padding:8px 24px;background:var(--dark);overflow-x:auto;border-bottom:1px solid var(--border);}
+.nav button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 13px;border-radius:3px;cursor:pointer;font-size:.75em;font-weight:600;white-space:nowrap;transition:all .2s;font-family:'Geist',sans-serif;}
+.nav button:hover{border-color:var(--orange);color:var(--white);}
+.nav button.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+.box{max-width:1260px;margin:0 auto;padding:16px 24px;}
+.tab{display:none;}.tab.on{display:block;}
+.cd{background:var(--card);border-radius:4px;padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.cd h2{font-size:.85em;margin-bottom:12px;color:var(--orange);letter-spacing:1.5px;}
+.cd h3{font-size:.8em;margin-bottom:8px;color:var(--teal);letter-spacing:1px;}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.sc{background:var(--card2);border-radius:4px;padding:14px;text-align:center;border:1px solid var(--border);}
+.sc .n{font-size:1.8em;font-weight:800;font-family:'Archivo Black',sans-serif;}
+.sc .n.or{color:var(--orange);}.sc .n.te{color:var(--teal);}.sc .n.wh{color:var(--white);}
+.sc .l{font-size:.65em;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+input,textarea,select{background:var(--dark);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:3px;font-size:.85em;width:100%;font-family:'Geist',sans-serif;}
+textarea{resize:vertical;min-height:60px;}
+.btn{background:var(--orange);color:#fff;border:none;padding:8px 18px;border-radius:3px;cursor:pointer;font-weight:700;font-size:.75em;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;font-family:'Geist',sans-serif;}
+.btn:hover{filter:brightness(1.15);transform:translateY(-1px);}
+.btn-s{padding:5px 12px;font-size:.7em;}
+.btn-t{background:var(--teal);}.btn-g{background:var(--ok);}.btn-w{background:var(--warn);color:#333;}
+.btn-o{background:transparent;border:1px solid var(--orange);color:var(--orange);}.btn-o:hover{background:var(--orange);color:#fff;}
+.btn-to{background:transparent;border:1px solid var(--teal);color:var(--teal);}.btn-to:hover{background:var(--teal);color:#fff;}
+.tg{display:inline-block;padding:2px 8px;border-radius:2px;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.tg-p1{background:var(--bad);color:#fff;}.tg-p2{background:var(--orange);color:#fff;}.tg-p3{background:var(--warn);color:#333;}.tg-p4{background:var(--teal);color:#fff;}
+.tg-done{background:var(--ok);color:#fff;}.tg-new{background:var(--teal);color:#fff;}.tg-ip{background:var(--warn);color:#333;}
+table{width:100%;border-collapse:collapse;font-size:.8em;}
+th{text-align:left;padding:8px 10px;background:var(--dark);color:var(--orange);font-weight:700;font-size:.7em;text-transform:uppercase;letter-spacing:1px;font-family:'Archivo Black',sans-serif;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);}
+tr:hover{background:rgba(212,98,43,0.05);}
+.chk{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:3px;margin-bottom:3px;cursor:pointer;transition:background .2s;}
+.chk:hover{background:rgba(255,255,255,0.03);}
+.chk input[type=checkbox]{width:16px;height:16px;accent-color:var(--orange);margin-top:2px;flex-shrink:0;}
+.chk.done .ct{text-decoration:line-through;color:var(--muted);}
+.ct{font-size:.8em;}.cm{font-size:.65em;color:var(--muted);}
+.rb{background:var(--dark);border-left:3px solid var(--orange);padding:12px 14px;border-radius:0 3px 3px 0;margin:6px 0;font-size:.8em;line-height:1.5;position:relative;white-space:pre-wrap;}
+.rb .cp{position:absolute;top:6px;right:6px;background:var(--card);border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:3px;cursor:pointer;font-size:.65em;text-transform:uppercase;letter-spacing:.5px;}
+.rb .cp:hover{color:var(--orange);}
+.fg{margin-bottom:10px;}.fg label{display:block;font-size:.65em;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:768px){.g2,.g3{grid-template-columns:1fr;}.sg{grid-template-columns:repeat(2,1fr);}}
+.fr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.mt{margin-top:10px;}.mb{margin-bottom:10px;}
+.mu{color:var(--muted);font-size:.8em;}
+.es{text-align:center;padding:30px;color:var(--muted);}.es .em{font-size:2.5em;margin-bottom:8px;}
+.scan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;}
+.scan-card{background:var(--dark);border-radius:4px;padding:14px;border:1px solid var(--border);cursor:pointer;transition:all .2s;text-align:center;}
+.scan-card:hover{border-color:var(--orange);transform:translateY(-2px);box-shadow:0 4px 15px rgba(212,98,43,0.15);}
+.scan-card .icon{font-size:1.8em;margin-bottom:4px;}.scan-card .name{font-weight:700;font-size:.8em;}.scan-card .desc{font-size:.65em;color:var(--muted);margin-top:3px;}
+.radar-item{background:var(--dark);border-radius:3px;padding:12px;margin-bottom:6px;border-left:3px solid var(--teal);}
+.radar-item h4{font-size:.8em;color:var(--white);margin-bottom:3px;}.radar-item p{font-size:.75em;color:var(--muted);margin-bottom:3px;}.radar-item .ex{font-size:.7em;color:var(--teal);}
+.ql-form{background:var(--dark);border-radius:4px;padding:16px;margin-top:12px;border:1px solid var(--border);}
+.wt{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;}
+.wt div{padding:6px 14px;border-radius:3px;background:var(--dark);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.75em;font-weight:600;}
+.wt div.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+.cday{background:var(--dark);border-radius:3px;padding:10px;margin-bottom:5px;border-left:3px solid var(--border);}
+.cday .dt{font-size:.7em;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px;font-family:'Archivo Black',sans-serif;}
+.cday .cn{font-size:.78em;margin-top:3px;padding:2px 0;}
+.pl{display:inline-block;padding:1px 7px;border-radius:2px;font-size:.6em;font-weight:700;margin-right:3px;text-transform:uppercase;letter-spacing:.5px;}
+.pl-h{background:var(--orange);color:#fff;}.pl-s{background:var(--teal);color:#fff;}.pl-e{background:#AB47BC;color:#fff;}.pl-b{background:var(--white);color:var(--black);}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--ok);color:#fff;padding:10px 18px;border-radius:3px;font-weight:600;font-size:.8em;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+.dept-tab{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;}
+.dept-tab div{padding:6px 14px;border-radius:3px;background:var(--dark);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.75em;font-weight:600;}
+.dept-tab div.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:10px;border-bottom:1px solid var(--border);transition:background .2s;}
+.task-row:hover{background:rgba(255,255,255,0.02);}
+.task-row.done{opacity:.5;}
+.task-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);margin-top:3px;flex-shrink:0;}
+.task-info{flex:1;}.task-info .tt{font-size:.82em;font-weight:600;}.task-info .ts{font-size:.65em;color:var(--muted);margin-top:2px;}
+.task-info .done-text{text-decoration:line-through;color:var(--muted);}
+.budget-bar{height:10px;background:var(--dark);border-radius:3px;overflow:hidden;margin:6px 0;}
+.budget-fill{height:100%;border-radius:3px;transition:width .5s;}
+.foot{text-align:center;padding:20px;color:var(--muted);font-size:.65em;border-top:1px solid var(--border);margin-top:20px;}
+.foot span{color:var(--orange);font-family:'Archivo Black',sans-serif;text-transform:uppercase;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="hdr"><div class="hdr-row"><div><div class="hdr-title"><span>Burners</span> Command Centre</div><div class="hdr-sub">free.studio × Betty's Burgers | Campaign Hub | 12 Mar – 19 Apr 2026</div></div><div class="fr"><span class="live">● Live</span><span id="syncStatus" style="margin-right:8px;"></span><span style="color:var(--muted);font-size:.7em;" id="cDate"></span></div></div></div>
+<div class="nav" id="nv">
+<button class="on" onclick="st('dash')">Dashboard</button>
+<button onclick="st('plan')">Week Plan</button>
+<button onclick="st('tasks')">Team Tasks</button>
+<button onclick="st('budget')">Budget</button>
+<button onclick="st('scan')">Scanner</button>
+<button onclick="st('radar')">Radar</button>
+<button onclick="st('resp')">Responses</button>
+<button onclick="st('opp')">Opportunities</button>
+<button onclick="st('crew')">Creators & PR</button>
+<button onclick="st('ugc')">UGC Engine</button>
+<button onclick="st('chk')">Checklist</button>
+<button onclick="st('log')">Stats</button>
+</div>
+<div class="box">
+
+<!-- DASHBOARD -->
+<div class="tab on" id="t-dash">
+<div class="sg">
+<div class="sc"><div class="n or" id="s-views">450K</div><div class="l">Weekend Views</div></div>
+<div class="sc"><div class="n te" id="s-opp">0</div><div class="l">Active Opps</div></div>
+<div class="sc"><div class="n or" id="s-res">0</div><div class="l">Responses</div></div>
+<div class="sc"><div class="n te" id="s-ugc">0</div><div class="l">UGC Spotted</div></div>
+<div class="sc"><div class="n wh" id="s-chk">0%</div><div class="l">Today's Tasks</div></div>
+<div class="sc"><div class="n or" id="s-bud">$20,000</div><div class="l">Boost Left</div></div>
+<div class="sc"><div class="n te" id="s-cre">10</div><div class="l">Creators</div></div>
+<div class="sc"><div class="n wh" id="s-day">34</div><div class="l">Days Left</div></div>
+</div>
+<div class="g2">
+<div class="cd"><h2>Priority Actions</h2><div id="dPri"></div></div>
+<div class="cd"><h2>What To Look For Now</h2><div id="dRadar"></div></div>
+</div>
+<div class="cd"><h2>Quick Actions</h2><div class="fr mt">
+<button class="btn" onclick="st('scan')">Scan Channels</button>
+<button class="btn btn-t" onclick="st('resp')">Draft Response</button>
+<button class="btn btn-o" onclick="st('opp')">Log Opportunity</button>
+<button class="btn btn-to" onclick="st('tasks')">Team Tasks</button>
+</div></div>
+<div class="cd"><h2>Campaign Pulse</h2>
+<p class="mu mb">Week <span id="cWk">1</span> of 5 — <span id="wTh"></span></p>
+<div style="background:var(--dark);border-radius:3px;overflow:hidden;height:8px;"><div id="pBar" style="height:100%;background:linear-gradient(90deg,var(--orange),var(--teal));border-radius:3px;transition:width .5s;"></div></div>
+<p class="mu" style="margin-top:4px;"><span id="pPct">0</span>% complete</p>
+</div></div>
+
+<!-- WEEK PLAN -->
+<div class="tab" id="t-plan">
+<div class="cd"><h2>Content Calendar — Weeks 2–5</h2><div class="wt" id="wkTabs"></div><div id="calCon"></div></div>
+</div>
+
+<!-- TEAM TASKS -->
+<div class="tab" id="t-tasks">
+<div class="cd"><h2>Team Task Board</h2>
+<div class="dept-tab" id="deptTabs"></div>
+<div class="fr mb"><button class="btn btn-s" onclick="showAddTask()">+ Add Task</button><button class="btn btn-s btn-to" onclick="clearDoneTasks()">Clear Done</button></div>
+<div id="addTaskForm" style="display:none;" class="ql-form mb">
+<div class="g3"><div class="fg"><label>Task</label><input id="ntTask" placeholder="What needs doing?"></div><div class="fg"><label>Owner</label><select id="ntOwner"><option>Michael</option><option>Lucy</option><option>Jess</option><option>Content Team</option><option>Social Team</option><option>Betty's/Client</option><option>Media/Boost</option></select></div><div class="fg"><label>Due</label><input type="date" id="ntDue"></div></div>
+<div class="g2"><div class="fg"><label>Priority</label><select id="ntPri"><option value="p1">P1 — Urgent</option><option value="p2" selected>P2 — Important</option><option value="p3">P3 — Standard</option></select></div><div class="fg"><label>Department</label><select id="ntDept"><option>All</option><option>PR</option><option>Influencer</option><option>Content</option><option>Social</option><option>Client</option><option>Media/Boost</option></select></div></div>
+<button class="btn mt" onclick="addTask()">Add Task</button>
+</div>
+<div id="taskList"></div>
+</div></div>
+
+<!-- BUDGET -->
+<div class="tab" id="t-budget">
+<div class="cd"><h2>Boost Budget Tracker — $20,000 Total</h2>
+<div class="sg">
+<div class="sc"><div class="n or" id="b-total">$20,000</div><div class="l">Total Budget</div></div>
+<div class="sc"><div class="n te" id="b-spent">$0</div><div class="l">Spent</div></div>
+<div class="sc"><div class="n wh" id="b-rem">$20,000</div><div class="l">Remaining</div></div>
+</div>
+<div class="budget-bar"><div id="budgetFill" class="budget-fill" style="width:0%;background:var(--teal);"></div></div>
+<p class="mu mb"><span id="b-pct">0</span>% spent</p>
+<h3>Weekly Allocation</h3>
+<table><thead><tr><th>Week</th><th>Planned</th><th>Spent</th><th>Status</th></tr></thead><tbody id="budgetTable"></tbody></table>
+</div>
+<div class="cd"><h2>Log Boost Spend</h2>
+<div class="g3"><div class="fg"><label>Amount ($)</label><input type="number" id="bsAmt" placeholder="500"></div><div class="fg"><label>Platform</label><select id="bsPl"><option>TikTok</option><option>Meta (IG/FB)</option><option>Other</option></select></div><div class="fg"><label>Week</label><select id="bsWk"><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option><option value="5">Week 5</option></select></div></div>
+<div class="fg"><label>What's being boosted?</label><input id="bsWhat" placeholder="e.g. Aliene TikTok, One Word Reel..."></div>
+<button class="btn" onclick="logSpend()">Log Spend</button>
+<div id="spendLog" class="mt"></div>
+</div>
+<div class="cd"><h2>Creator Usage Rights — Cost Dashboard</h2>
+<table><thead><tr><th>Creator</th><th>5-Wk Cost</th><th>4-Wk Cost</th><th>Status</th><th>Action</th></tr></thead><tbody id="usageTable"></tbody></table>
+</div></div>
+
+<!-- SCANNER -->
+<div class="tab" id="t-scan">
+<div class="cd"><h2>Channel Scanner</h2><p class="mu mb">One click opens a pre-loaded search on each platform.</p>
+<button class="btn mb" onclick="openAll()" style="padding:10px 24px;">Open All Channels</button>
+<div class="scan-grid" id="scanGrid"></div></div>
+<div class="cd"><h2>Perplexity Scan Queries</h2><p class="mu mb">Copy into this Space for real-time AI scan:</p><div id="pxQueries"></div></div>
+<div class="cd"><h2>Quick-Log From Scan</h2><p class="mu mb">Spot something? Log it — auto-categorises + generates responses.</p>
+<div class="ql-form"><div class="g2"><div class="fg"><label>What did you find?</label><select id="qlType"><option value="creator_post">Creator posted</option><option value="ugc">Customer UGC</option><option value="press">Press mention</option><option value="trend">Trending topic</option><option value="competitor">Competitor</option><option value="comment_opp">Comment opportunity</option><option value="collab">Potential collab</option></select></div><div class="fg"><label>Platform</label><select id="qlPlat"><option>TikTok</option><option>Instagram</option><option>Facebook</option><option>Twitter/X</option><option>Press</option><option>TV</option><option>Other</option></select></div></div>
+<div class="fg"><label>URL or description</label><textarea id="qlDesc" placeholder="Describe what you found..."></textarea></div>
+<div class="fg"><label>Handle (optional)</label><input id="qlName" placeholder="@handle"></div>
+<button class="btn" onclick="quickLog()">Log + Generate Responses</button>
+<div id="qlOutput" style="display:none;" class="mt"></div></div></div></div>
+
+<!-- RADAR -->
+<div class="tab" id="t-radar">
+<div class="cd"><h2>Live Radar — What To Hunt For Today</h2><p class="mu mb">Context-aware based on campaign week.</p><div id="radarItems"></div></div>
+<div class="cd"><h2>Creator Watch Types</h2><div id="watchList"></div></div></div>
+
+<!-- RESPONSES -->
+<div class="tab" id="t-resp">
+<div class="cd"><h2>Betty Response Generator</h2>
+<div class="fg"><label>Scenario</label><select id="rScen"><option value="creator_post">Creator posted content</option><option value="ugc">Customer UGC</option><option value="finisher">Finished the Madman</option><option value="tapout">Tapped out</option><option value="nervous">Nervous / curious</option><option value="tag_mate">Tagged a mate</option><option value="press">Press coverage</option><option value="today_show">TODAY Show</option><option value="not_hot">Says it's not hot</option><option value="troll">Troll</option><option value="complaint">Complaint</option><option value="competitor">Competitor</option><option value="voucher_dare">Voucher-dare DM</option><option value="custom">Custom</option></select></div>
+<div class="fg"><label>Context</label><textarea id="rCtx" placeholder="Paste the comment/post..."></textarea></div>
+<div class="fg"><label>Name / handle</label><input id="rName" placeholder="@handle"></div>
+<button class="btn" onclick="genResp()">Generate Responses</button>
+<div id="rOut" class="mt" style="display:none;"><h3>Your Responses:</h3><div id="rCards"></div></div></div>
+<div class="cd"><h2>Response History</h2><div id="rHist"><div class="es"><div class="em">💬</div><p>Responses appear here</p></div></div></div></div>
+
+<!-- OPPORTUNITIES -->
+<div class="tab" id="t-opp">
+<div class="cd"><h2>Log Opportunity</h2>
+<div class="g2"><div class="fg"><label>Platform</label><select id="oPl"><option>TikTok</option><option>Instagram</option><option>Facebook</option><option>Twitter/X</option><option>Press</option><option>TV</option><option>Other</option></select></div><div class="fg"><label>Priority</label><select id="oPr"><option value="p1">P1 — Crisis/Urgent</option><option value="p2" selected>P2 — High-Value</option><option value="p3">P3 — Engagement</option><option value="p4">P4 — Ambient</option></select></div></div>
+<div class="fg"><label>Description</label><textarea id="oDe" placeholder="What's the opportunity?"></textarea></div>
+<div class="g2"><div class="fg"><label>Type</label><select id="oTy"><option>Ride</option><option>Comment</option><option>Collab</option><option>Amplify</option><option>Support</option></select></div><div class="fg"><label>Action</label><input id="oAc" placeholder="What should we do?"></div></div>
+<button class="btn" onclick="addOpp()">Add Opportunity</button></div>
+<div class="cd"><h2>Active Opportunities</h2><div id="oList"></div></div></div>
+
+<!-- CREATORS & PR -->
+<div class="tab" id="t-crew">
+<div class="cd"><h2>Creator Tracker</h2><div style="overflow-x:auto;"><table><thead><tr><th>Creator</th><th>Handle</th><th>Platform</th><th>Followers</th><th>Content</th><th>Response</th><th>Usage</th><th></th></tr></thead><tbody id="crTb"></tbody></table></div></div>
+<div class="cd"><h2>Secured PR</h2><div style="overflow-x:auto;"><table><thead><tr><th>Outlet</th><th>Type</th><th>Date</th><th>Social Action</th><th>Done?</th></tr></thead><tbody id="prTb"></tbody></table></div></div>
+<div class="cd"><h2>Warm Leads</h2><div style="overflow-x:auto;"><table><thead><tr><th>Outlet</th><th>Status</th><th>Next Step</th><th></th></tr></thead><tbody id="wlTb"></tbody></table></div></div></div>
+
+<!-- UGC ENGINE -->
+<div class="tab" id="t-ugc">
+<div class="cd"><h2>UGC Engine — 10 Tactics to Drive Real People Sharing</h2><p class="mu mb">Track implementation of each tactic. Assign owners and mark done.</p><div id="ugcTactics"></div></div>
+<div class="cd"><h2>Voucher-Dare Tracker</h2><p class="mu mb">Track outreach to micro-accounts. Budget: $600 in product (20 × $30 vouchers).</p>
+<div class="fg"><label>Add recipient</label><div class="fr"><input id="vdName" placeholder="@handle" style="width:auto;flex:1;"><select id="vdSt" style="width:auto;"><option>DM Sent</option><option>Accepted</option><option>Content Posted</option><option>No Reply</option></select><button class="btn btn-s btn-t" onclick="addVD()">Add</button></div></div>
+<div id="vdList" class="mt"></div></div></div>
+
+<!-- CHECKLIST -->
+<div class="tab" id="t-chk">
+<div class="cd"><div class="fr" style="justify-content:space-between;"><h2>Daily Checklist</h2><button class="btn btn-s btn-o" onclick="resetChk()">Reset</button></div><div id="chkItems" class="mt"></div></div>
+<div class="cd"><h2>One-Time Setup</h2><div id="setupItems"></div></div></div>
+
+<!-- STATS -->
+<div class="tab" id="t-log">
+<div class="cd"><h2>Daily Stats Log</h2>
+<div class="g3"><div class="fg"><label>Comments Made</label><input type="number" id="lCom" value="0"></div><div class="fg"><label>UGC Spotted</label><input type="number" id="lUgc" value="0"></div><div class="fg"><label>Creator Posts</label><input type="number" id="lCre" value="0"></div></div>
+<div class="g3"><div class="fg"><label>Press Pieces</label><input type="number" id="lPre" value="0"></div><div class="fg"><label>Avg Response (mins)</label><input type="number" id="lRt" value="0"></div><div class="fg"><label>Sentiment (1-10)</label><input type="number" id="lSen" min="1" max="10" value="8"></div></div>
+<div class="fg"><label>Notes</label><textarea id="lNot" placeholder="Highlights, learnings..."></textarea></div>
+<button class="btn" onclick="saveLog()">Save Today's Log</button></div>
+<div class="cd"><h2>History</h2><div id="logH"><div class="es"><div class="em">📈</div><p>Logs build here</p></div></div></div></div>
+
+</div>
+<div class="foot">Built by <span>free.studio</span> — Burners Command Centre v3.0</div>
+<div class="toast" id="toast"></div>
+<script>
+const SK='burners_cc_v3';
+let D=loadD();function loadD(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return defD();}
+function saveD(){localStorage.setItem(SK,JSON.stringify(D));updDash();}
+function defD(){return{
+opps:[
+{id:1,pl:'TikTok',pr:'p2',desc:'Yahoo Australia TikTok — Madman taste-test',ty:'Amplify',ac:'Comment + Duet',st:'new',dt:'2026-03-13'},
+{id:2,pl:'Press',pr:'p2',desc:'Concrete Playground feature',ty:'Amplify',ac:'Stories + comment',st:'new',dt:'2026-03-13'},
+{id:3,pl:'TV',pr:'p1',desc:'TODAY Show segment — 1,162 likes on IG, 428 on TikTok',ty:'Amplify',ac:'Comment on all TODAY posts, reshare to Stories',st:'new',dt:'2026-03-14'},
+{id:4,pl:'Press',pr:'p1',desc:'news.com.au — dropping Mon/Tue',ty:'Amplify',ac:'Stories + reshare + comment IMMEDIATELY when live',st:'new',dt:'2026-03-16'},
+{id:5,pl:'Press',pr:'p2',desc:'New Idea — Wed 19 Mar',ty:'Amplify',ac:'Stories + press quotes carousel',st:'new',dt:'2026-03-19'},
+],
+creators:[
+{nm:'Aliene',hd:'@melbfoodieee',pf:'TikTok',fl:'374.7K',cs:'approved',rs:'pending',us:'wait'},
+{nm:'Kayla',hd:'@kaylaschembriii',pf:'TikTok',fl:'67.3K',cs:'approved',rs:'pending',us:'1wk free'},
+{nm:'Maria',hd:'@maria',pf:'TikTok+IG',fl:'—',cs:'approved',rs:'pending',us:'lock $75/wk'},
+{nm:'Riley',hd:'@rileyarmitage_',pf:'TikTok',fl:'41.4K',cs:'approved',rs:'pending',us:'wait'},
+{nm:'Tessa',hd:'@tessa_bona',pf:'IG Stories',fl:'51.5K',cs:'approved',rs:'pending',us:'lock $725'},
+{nm:'Dubs',hd:'@dub.eats.everything',pf:'TikTok+IG',fl:'40.5K+50K',cs:'approved',rs:'pending',us:'wait'},
+{nm:'Nectro',hd:'@nectro',pf:'TikTok',fl:'—',cs:'due today',rs:'pending',us:'wait'},
+{nm:'Aruba',hd:'@aruba',pf:'—',fl:'—',cs:'due today',rs:'pending',us:'FREE ✓'},
+{nm:'Hendri',hd:'@hendri',pf:'—',fl:'—',cs:'due 23 Mar',rs:'pending',us:'FREE ✓'},
+{nm:'Bros on Bites',hd:'@brosonbites',pf:'TikTok',fl:'2K',cs:'contra',rs:'pending',us:'contra'},
+],
+pr:[
+{out:'Herald Sun',ty:'Online',dt:'13 Mar',sa:'Stories + comment',dn:true},
+{out:'Courier Mail',ty:'Print',dt:'13 Mar',sa:'Story with paper shot',dn:true},
+{out:'TODAY Show',ty:'TV',dt:'14 Mar',sa:'Reel/TikTok + comment on TODAY posts',dn:false},
+{out:'Yahoo Lifestyle',ty:'Online+Video',dt:'12 Mar',sa:'Stories + reshare',dn:true},
+{out:'Concrete Playground',ty:'Online',dt:'13 Mar',sa:'Stories + comment',dn:true},
+{out:'Daily Straits',ty:'Online',dt:'13 Mar',sa:'Stories shout-out',dn:false},
+{out:'news.com.au',ty:'Online+Video',dt:'16-17 Mar',sa:'AMPLIFY IMMEDIATELY — Stories + Reel + comment',dn:false},
+{out:'New Idea',ty:'Magazine',dt:'19 Mar',sa:'Stories + press quotes carousel',dn:false},
+{out:'Melbourne Insider',ty:'Online',dt:'TBC',sa:'Press love carousel',dn:false},
+{out:'Daily Addict',ty:'Online',dt:'TBC',sa:'Stories shout-out',dn:false},
+{out:'Glamorazzi',ty:'Online',dt:'TBC',sa:'Stories shout-out',dn:false},
+],
+wl:[
+{out:'Urban List',st:'Interested',ns:'Comment on food content'},
+{out:'NOVA 96.9',st:'Negotiating',ns:'Vouchers + live try'},
+{out:'7NEWS.com.au',st:'Interested, pushing paid',ns:'Negotiate burger drop'},
+{out:'Secret Melbourne',st:'Expressed interest',ns:'Follow up + engage'},
+],
+tasks:[
+{id:1,task:'Approve + finalise "One Word to Describe" edit → post by midday',owner:'Content Team',dept:'Content',pri:'p1',due:'2026-03-16',done:false},
+{id:2,task:'Lock Aruba + Hendri + Maria usage rights',owner:'Jess',dept:'Influencer',pri:'p1',due:'2026-03-16',done:false},
+{id:3,task:'Confirm Tue/Wed influencer posting schedule',owner:'Jess',dept:'Influencer',pri:'p1',due:'2026-03-16',done:false},
+{id:4,task:'Review Nectro + Aruba content submissions',owner:'Jess',dept:'Influencer',pri:'p2',due:'2026-03-16',done:false},
+{id:5,task:'Monitor for news.com.au article — amplify immediately',owner:'Lucy',dept:'PR',pri:'p1',due:'2026-03-17',done:false},
+{id:6,task:'Respond to ALL weekend comments across all platforms',owner:'Social Team',dept:'Social',pri:'p1',due:'2026-03-16',done:false},
+{id:7,task:'Tessa & Riley contract decision — $725 usage',owner:'Jess',dept:'Influencer',pri:'p2',due:'2026-03-16',done:false},
+{id:8,task:'Brief Betty\'s ops on in-store UGC triggers',owner:'Michael',dept:'Client',pri:'p2',due:'2026-03-19',done:false},
+{id:9,task:'Set up boost campaigns for Tue/Wed influencer content',owner:'Media/Boost',dept:'Media/Boost',pri:'p2',due:'2026-03-17',done:false},
+{id:10,task:'Comment on EVERY creator post within 30 mins of going live',owner:'Social Team',dept:'Social',pri:'p1',due:'2026-03-18',done:false},
+{id:11,task:'Review 24hr influencer metrics — pick top 2 for boost',owner:'Jess',dept:'Influencer',pri:'p1',due:'2026-03-18',done:false},
+{id:12,task:'Boost top-performing creator content ($1,500)',owner:'Media/Boost',dept:'Media/Boost',pri:'p1',due:'2026-03-18',done:false},
+{id:13,task:'Amplify New Idea coverage on Stories',owner:'Lucy',dept:'PR',pri:'p2',due:'2026-03-19',done:false},
+{id:14,task:'Week 2 metrics review + Wk3 boost decisions',owner:'Michael',dept:'All',pri:'p2',due:'2026-03-21',done:false},
+{id:15,task:'Stories: "The reviews are in" press quotes carousel',owner:'Content Team',dept:'Content',pri:'p2',due:'2026-03-16',done:false},
+{id:16,task:'Pin best comment on Madman launch post',owner:'Social Team',dept:'Social',pri:'p3',due:'2026-03-16',done:false},
+{id:17,task:'Post "Before & After" split-screen Reel',owner:'Content Team',dept:'Content',pri:'p2',due:'2026-03-18',done:false},
+{id:18,task:'Post "Pick Your Level" carousel',owner:'Social Team',dept:'Content',pri:'p3',due:'2026-03-18',done:false},
+{id:19,task:'Start voucher-dare DM outreach (20 micro-accounts)',owner:'Jess',dept:'Influencer',pri:'p2',due:'2026-03-19',done:false},
+{id:20,task:'"Support Crew Starter Pack" carousel',owner:'Content Team',dept:'Content',pri:'p3',due:'2026-03-20',done:false},
+],
+budget:{total:20000,planned:{2:7000,3:5000,4:4000,5:4000},spent:{2:0,3:0,4:0,5:0},log:[]},
+ugcTactics:[
+{t:'Table tent / counter card: "Share reaction, tag us, win"',owner:'Betty\'s/Client',due:'Wed 19 Mar',done:false},
+{t:'Waiver photo moment — staff offer to photograph signing',owner:'Betty\'s/Client',due:'Wed 19 Mar',done:false},
+{t:'Milk selfie station — branded "Support Crew Was Here" sign',owner:'Betty\'s/Client',due:'Fri 21 Mar',done:false},
+{t:'Staff script: "Make sure you film your reaction"',owner:'Betty\'s/Client',due:'Wed 19 Mar',done:false},
+{t:'Comment CTA on every post — question or dare in caption',owner:'Social Team',due:'Ongoing',done:false},
+{t:'Reply to EVERY UGC post within 30 minutes',owner:'Social Team',due:'Ongoing',done:false},
+{t:'Weekly UGC spotlight — 3-5 customer posts on Stories',owner:'Content Team',due:'Every Sat',done:false},
+{t:'DM outreach to small accounts (1K–10K) for reshare permission',owner:'Social Team',due:'Ongoing',done:false},
+{t:'"Dare your mate" post format every Thursday',owner:'Content Team',due:'Every Thu',done:false},
+{t:'Voucher-dare: 20 × $30 vouchers to micro-accounts',owner:'Jess',due:'Start Wk2',done:false},
+],
+vdList:[],
+chk:{},sChk:{},rHist:[],logs:[],stats:{res:0,ugc:0}
+};}
+
+const tabs=['dash','plan','tasks','budget','scan','radar','resp','opp','crew','ugc','chk','log'];
+function st(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));document.getElementById('t-'+id).classList.add('on');const i=tabs.indexOf(id);if(i>=0)document.querySelectorAll('.nav button')[i].classList.add('on');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function cpTx(btn){const t=btn.parentElement.textContent.replace('Copy','').trim();navigator.clipboard.writeText(t);btn.textContent='✓';setTimeout(()=>btn.textContent='Copy',1500);}
+
+// DASHBOARD
+function updDash(){
+const ao=D.opps.filter(o=>o.st!=='done').length;document.getElementById('s-opp').textContent=ao;
+document.getElementById('s-res').textContent=D.stats.res||0;document.getElementById('s-ugc').textContent=D.stats.ugc||0;
+const spent=Object.values(D.budget.spent).reduce((a,b)=>a+b,0);
+document.getElementById('s-bud').textContent='$'+(D.budget.total-spent).toLocaleString();
+const end=new Date('2026-04-19'),now=new Date(),dl=Math.max(0,Math.ceil((end-now)/864e5));document.getElementById('s-day').textContent=dl;
+const start=new Date('2026-03-12'),el=Math.max(0,(now-start)/864e5),pct=Math.min(100,Math.round(el/39*100));
+document.getElementById('pBar').style.width=pct+'%';document.getElementById('pPct').textContent=pct;
+const wk=Math.min(5,Math.max(1,Math.ceil(el/7)));document.getElementById('cWk').textContent=wk;
+const thm=['IGNITION','THE REACTIONS','THE PARTICIPATION','THE STORIES','THE FINALE'];
+document.getElementById('wTh').textContent=thm[wk-1]||thm[0];
+const td=new Date().toISOString().split('T')[0];
+const allT=D.tasks.filter(t=>t.due<=td||t.due===td),doneT=allT.filter(t=>t.done);
+document.getElementById('s-chk').textContent=allT.length?Math.round(doneT.length/allT.length*100)+'%':'—';
+const pd=document.getElementById('dPri');
+const p12=D.opps.filter(o=>(o.pr==='p1'||o.pr==='p2')&&o.st!=='done').slice(0,5);
+pd.innerHTML=p12.length?p12.map(o=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div class="fr"><span class="tg tg-${o.pr}">${o.pr.toUpperCase()}</span><span class="mu">${o.pl}</span></div><p style="margin-top:3px;font-size:.78em;">${o.desc.substring(0,100)}</p></div>`).join(''):'<p class="mu">No urgent priorities</p>';
+const rd=document.getElementById('dRadar');const ri=getRadar().slice(0,3);
+rd.innerHTML=ri.map(r=>`<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.78em;"><strong style="color:var(--teal);">${r.icon}</strong> ${r.title}<br><span class="mu">${r.hint}</span></div>`).join('');
+}
+
+// CALENDAR
+const calD={
+2:{t:'WEEK 2 — THE REACTIONS',s:'Influencer wave + news.com.au + New Idea',d:[
+{dt:'Mon 16 Mar',i:[{p:'h',t:'"One Word to Describe the Madman" Reel/TikTok'},{p:'b',t:'Stories: "The reviews are in" press quotes carousel'},{p:'h',t:'Amplify news.com.au when it drops'}]},
+{dt:'Tue 17 Mar',i:[{p:'h',t:'INFLUENCER DAY 1: Aliene (374.7K), Kayla (67.3K), Riley (41.4K) TikToks go live'},{p:'e',t:'Tessa IG Stories go live'},{p:'h',t:'Maria posts evening (6-7pm)'},{p:'s',t:'Comment on every creator post <30 min'}]},
+{dt:'Wed 18 Mar',i:[{p:'h',t:'INFLUENCER DAY 2: Dubs (40.5K+50K) goes live'},{p:'h',t:'"Before & After" split-screen Reel'},{p:'b',t:'"Pick Your Level" carousel (Versus / Hot Shot / Madman)'},{p:'h',t:'BOOST top 2 creators ($1,500)'}]},
+{dt:'Thu 19 Mar',i:[{p:'b',t:'New Idea coverage — amplify on Stories'},{p:'h',t:'"Carolina Reaper Is a Creeper" timer TikTok'},{p:'s',t:'UGC reshare — best customer content'}]},
+{dt:'Fri 20 Mar',i:[{p:'s',t:'"Support Crew Starter Pack" carousel'},{p:'h',t:'Duet/Stitch best creator content'},{p:'e',t:'Stories: "Tag your Support Crew this weekend"'}]},
+{dt:'Sat–Sun 21–22',i:[{p:'e',t:'UGC spotlight reel (best of the week)'},{p:'e',t:'"Weekend Warriors" — reshare anyone trying Burners'},{p:'h',t:'Duet best organic TikTok'}]},
+]},
+3:{t:'WEEK 3 — THE PARTICIPATION',s:'Get customers creating. Shift from watching to doing.',d:[
+{dt:'Mon 24',i:[{p:'e',t:'Vox pop: "Would you try the Madman?"'}]},
+{dt:'Tue 25',i:[{p:'s',t:'"Support Crew of the Week"'}]},
+{dt:'Wed 26',i:[{p:'h',t:'Staff POV: "When a table orders 4 Madmans"'}]},
+{dt:'Thu 27',i:[{p:'s',t:'"The Milk Files" carousel'}]},
+{dt:'Fri 28',i:[{p:'e',t:'"The Madman made me…" finish the sentence'}]},
+{dt:'Sat 29',i:[{p:'b',t:'BTS with Chef Jono'}]},
+{dt:'Sun 30',i:[{p:'e',t:'Hendri content amplification + voucher-led creator spotlight'}]},
+]},
+4:{t:'WEEK 4 — THE STORIES',s:'Emotional storytelling. The human side.',d:[
+{dt:'Mon 31',i:[{p:'e',t:'"Bravest Table in Australia" story edit'}]},
+{dt:'Tue 1 Apr',i:[{p:'b',t:'"Ask Betty Anything" Q&A'}]},
+{dt:'Wed 2',i:[{p:'h',t:'"Reasons NOT to Try the Madman" (reverse psychology)'}]},
+{dt:'Thu 3',i:[{p:'s',t:'"Love Letter to Milk"'}]},
+{dt:'Fri 4',i:[{p:'b',t:'Mid-campaign stats infographic'}]},
+{dt:'Sat 5',i:[{p:'e',t:'"Tag Your Support Crew" challenge'}]},
+{dt:'Sun 6',i:[{p:'b',t:'Lifestyle coverage montage'}]},
+]},
+5:{t:'WEEK 5 — THE FINALE',s:'Urgency. Last chance. Legendary stories.',d:[
+{dt:'Mon 7',i:[{p:'e',t:'Burners Hall of Fame — best reactions'}]},
+{dt:'Wed 9',i:[{p:'b',t:'"Things We\'ve Learned" reflections'}]},
+{dt:'Fri 11',i:[{p:'h',t:'"One Last Bite" countdown begins'}]},
+{dt:'Mon 14',i:[{p:'h',t:'"FINAL WEEK" urgency post'}]},
+{dt:'Wed 16',i:[{p:'e',t:'"3 Days Left" — reshare best of campaign'}]},
+{dt:'Fri 18',i:[{p:'h',t:'"Tomorrow is the last day"'}]},
+{dt:'Sat 19',i:[{p:'b',t:'Campaign wrap: stats + thanks'}]},
+]}};
+const pn={h:'🔥 Heat',s:'🥛 Support',e:'🎉 Experience',b:'💛 Betty'};const pc={h:'pl-h',s:'pl-s',e:'pl-e',b:'pl-b'};
+function renderCal(){document.getElementById('wkTabs').innerHTML=[2,3,4,5].map(w=>`<div class="${w===2?'on':''}" onclick="showWk(${w})">Week ${w}</div>`).join('');showWk(2);}
+function showWk(w){document.querySelectorAll('#wkTabs div').forEach(t=>t.classList.remove('on'));document.querySelectorAll('#wkTabs div')[w-2].classList.add('on');const wk=calD[w];document.getElementById('calCon').innerHTML=`<h3 style="margin-bottom:4px;">${wk.t}</h3><p class="mu mb">${wk.s}</p>`+wk.d.map(d=>`<div class="cday"><div class="dt">${d.dt}</div>${d.i.map(x=>`<div class="cn"><span class="pl ${pc[x.p]}">${pn[x.p]}</span> ${x.t}</div>`).join('')}</div>`).join('');}
+
+// TASKS
+const depts=['All','PR','Influencer','Content','Social','Client','Media/Boost'];let curDept='All';
+function renderDepts(){document.getElementById('deptTabs').innerHTML=depts.map(d=>`<div class="${d===curDept?'on':''}" onclick="curDept='${d}';renderDepts();renderTasks();">${d}</div>`).join('');}
+function renderTasks(){
+const ts=curDept==='All'?D.tasks:D.tasks.filter(t=>t.dept===curDept);
+const sorted=[...ts].sort((a,b)=>a.done-b.done||(a.pri<b.pri?-1:1));
+document.getElementById('taskList').innerHTML=sorted.length?sorted.map(t=>`<div class="task-row ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="tglTask(${t.id})"><div class="task-info"><div class="tt ${t.done?'done-text':''}">${t.task}</div><div class="ts"><span class="tg tg-${t.pri}">${t.pri.toUpperCase()}</span> ${t.owner} · ${t.dept} · Due: ${t.due}</div></div></div>`).join(''):'<p class="mu">No tasks for this department</p>';
+}
+function tglTask(id){const t=D.tasks.find(x=>x.id===id);if(t){t.done=!t.done;saveD();renderTasks();}}
+function showAddTask(){document.getElementById('addTaskForm').style.display=document.getElementById('addTaskForm').style.display==='none'?'block':'none';}
+function addTask(){const t={id:Date.now(),task:document.getElementById('ntTask').value,owner:document.getElementById('ntOwner').value,dept:document.getElementById('ntDept').value,pri:document.getElementById('ntPri').value,due:document.getElementById('ntDue').value,done:false};if(!t.task){toast('Add a task description');return;}D.tasks.push(t);saveD();renderTasks();document.getElementById('ntTask').value='';document.getElementById('addTaskForm').style.display='none';toast('Task added');}
+function clearDoneTasks(){D.tasks=D.tasks.filter(t=>!t.done);saveD();renderTasks();toast('Cleared done tasks');}
+
+// BUDGET
+function renderBudget(){
+const spent=Object.values(D.budget.spent).reduce((a,b)=>a+b,0);const rem=D.budget.total-spent;const pct=Math.round(spent/D.budget.total*100);
+document.getElementById('b-spent').textContent='$'+spent.toLocaleString();document.getElementById('b-rem').textContent='$'+rem.toLocaleString();document.getElementById('b-pct').textContent=pct;
+document.getElementById('budgetFill').style.width=pct+'%';document.getElementById('budgetFill').style.background=pct>80?'var(--bad)':pct>60?'var(--warn)':'var(--teal)';
+document.getElementById('budgetTable').innerHTML=[2,3,4,5].map(w=>{const p=D.budget.planned[w],s=D.budget.spent[w];const st=s>=p?'tg-done':s>0?'tg-ip':'tg-new';return`<tr><td><strong>Week ${w}</strong></td><td>$${p.toLocaleString()}</td><td>$${s.toLocaleString()}</td><td><span class="tg ${st}">${s>=p?'FULL':s>0?Math.round(s/p*100)+'%':'NOT STARTED'}</span></td></tr>`;}).join('');
+document.getElementById('spendLog').innerHTML=D.budget.log.length?'<table><thead><tr><th>Date</th><th>Amount</th><th>Platform</th><th>Content</th><th>Week</th></tr></thead><tbody>'+D.budget.log.map(l=>`<tr><td>${l.dt}</td><td>$${l.amt}</td><td>${l.pl}</td><td style="font-size:.75em;">${l.what}</td><td>Wk ${l.wk}</td></tr>`).join('')+'</tbody></table>':'';
+// Usage table
+const us=[
+{nm:'Aruba',c5:'$0',c4:'$0',st:'FREE ✓',rec:'Lock now — boost priority'},
+{nm:'Hendri',c5:'$0',c4:'$0',st:'FREE ✓',rec:'Lock now — boost priority'},
+{nm:'Maria',c5:'$375',c4:'$300',st:'$75/wk',rec:'Lock now — best value'},
+{nm:'Tessa & Riley',c5:'$725',c4:'$2,900',st:'Contract due today',rec:'Lock at $725 (4-wk)'},
+{nm:'Aliene',c5:'$1,375',c4:'$1,100',st:'Wait',rec:'Only if >50K organic'},
+{nm:'Kayla',c5:'$2,000',c4:'$1,500',st:'1 wk free',rec:'Wait — see organic'},
+{nm:'Dubs',c5:'$2,500',c4:'$2,000',st:'$500/wk',rec:'Decision by Fri'},
+{nm:'Nectro',c5:'$3,750',c4:'$3,000',st:'$750/wk',rec:'Unlikely unless viral'},
+];
+document.getElementById('usageTable').innerHTML=us.map(u=>`<tr><td><strong>${u.nm}</strong></td><td>${u.c5}</td><td>${u.c4}</td><td><span class="tg ${u.st.includes('FREE')?'tg-done':u.st.includes('Wait')?'tg-new':'tg-ip'}">${u.st}</span></td><td class="mu" style="font-size:.75em;">${u.rec}</td></tr>`).join('');
+}
+function logSpend(){const amt=parseInt(document.getElementById('bsAmt').value)||0;if(!amt){toast('Enter amount');return;}const wk=document.getElementById('bsWk').value;D.budget.spent[wk]=(D.budget.spent[wk]||0)+amt;D.budget.log.push({dt:new Date().toLocaleDateString(),amt:amt,pl:document.getElementById('bsPl').value,what:document.getElementById('bsWhat').value,wk:wk});saveD();renderBudget();document.getElementById('bsAmt').value='';document.getElementById('bsWhat').value='';toast('$'+amt+' logged');}
+
+// SCANNER
+const scanLinks=[
+{icon:'📸',name:'IG — #BettysBurners',desc:'Hashtag search',url:'https://www.instagram.com/explore/tags/bettysburners/'},
+{icon:'📸',name:'IG — Tagged Posts',desc:'Posts tagging Betty\'s',url:'https://www.instagram.com/bettys_burgers/tagged/'},
+{icon:'🎵',name:'TikTok — Burners',desc:'Brand search',url:'https://www.tiktok.com/search?q=betty%27s%20burgers%20burners'},
+{icon:'🎵',name:'TikTok — Madman',desc:'Hero product',url:'https://www.tiktok.com/search?q=madman%20burger%20betty%27s'},
+{icon:'📘',name:'Facebook',desc:'Mentions',url:'https://www.facebook.com/search/posts/?q=betty%27s%20burgers%20burners'},
+{icon:'🔍',name:'Google News',desc:'Press coverage',url:'https://www.google.com/search?q=%22betty%27s+burgers%22+burners+OR+madman&tbm=nws'},
+{icon:'🐦',name:'Twitter/X',desc:'Live mentions',url:'https://twitter.com/search?q=%22betty%27s%20burgers%22%20OR%20%22madman%20burger%22&f=live'},
+{icon:'🎵',name:'TikTok — #MilkMoment',desc:'Support angle',url:'https://www.tiktok.com/search?q=%23milkmoment%20betty'},
+];
+function renderScan(){document.getElementById('scanGrid').innerHTML=scanLinks.map(s=>`<div class="scan-card" onclick="window.open('${s.url}','_blank')"><div class="icon">${s.icon}</div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>`).join('');
+const pxQ=["What has been posted about Betty's Burgers Burners in the last 24 hours?","Any new TikTok or Instagram content mentioning Betty's Madman burger today?","Betty's Burgers press coverage this week March 2026","Trending spicy food content on TikTok Australia today"];
+document.getElementById('pxQueries').innerHTML=pxQ.map(q=>`<div class="rb"><button class="cp" onclick="cpTx(this)">Copy</button>${q}</div>`).join('');}
+function openAll(){scanLinks.forEach(s=>window.open(s.url,'_blank'));toast('All channels opened');}
+
+// QUICK LOG
+const qlMap={creator_post:'p2',ugc:'p3',press:'p2',trend:'p3',competitor:'p4',comment_opp:'p3',collab:'p3'};
+const qlTyMap={creator_post:'Amplify',ugc:'Support',press:'Amplify',trend:'Ride',competitor:'Comment',comment_opp:'Comment',collab:'Collab'};
+const qlResp={creator_post:["We've watched this multiple times. The moment {name} reached for the milk — iconic. 🔥🥛","This is EXACTLY what Burners was made for. {name}, you're officially in the Hall of Fame. 👑","The {name} x Burners crossover we didn't know we needed. 🔥"],ugc:["THIS. Real people, real reactions, real milk. Welcome to the Support Crew. 🥛👑","The face you pulled is now our favourite thing on the internet today. 🔥","We're sending this to everyone who says 'it can't be THAT hot.' 🥛"],press:["Huge love to {name} for covering the Burners story. 🔥🥛","Thanks to {name} for investigating the Madman situation. 🥛","The word is out. Thank you {name}. 🔥"],trend:["This trending format is perfect for Burners. Create a version featuring best Madman reactions + milk moments.","Ride this trend with a Betty twist — lead with support, end with heat.","Stitch/Duet the top version with Betty's take."],competitor:["Love to see spice everywhere. But for the one with a waiver AND milk… you know where we are. 🔥🥛","[Stay silent unless directly tagged. Let the product speak.]","Spice is having a moment. We'll be here with our Reaper and our milk. 🥛"],comment_opp:["Drop a warm, cheeky Betty comment. Be specific. Mention one detail only someone who watched would know.","Comment as Betty — supportive, never thirsty.","'Sounds like you need a Support Crew. We know a burger that comes with complimentary milk…'"],collab:["Hey {name} 👋 Betty's here. We've just dropped the Burners — our spiciest ever. We'd love to shout you one. Only ask: bring backup. 🔥🥛","This creator's audience is perfect. Send the voucher-dare DM.","Invite them for a Support Crew challenge — bring their crew, film the chaos."]};
+function quickLog(){const ty=document.getElementById('qlType').value,pl=document.getElementById('qlPlat').value,desc=document.getElementById('qlDesc').value,nm=document.getElementById('qlName').value||'legend';if(!desc){toast('Describe what you found');return;}
+const opp={id:Date.now(),pl:pl,pr:qlMap[ty]||'p3',desc:desc,ty:qlTyMap[ty]||'Comment',ac:'Auto-logged from scanner',st:'new',dt:new Date().toISOString().split('T')[0]};D.opps.unshift(opp);if(ty==='ugc')D.stats.ugc=(D.stats.ugc||0)+1;
+const resps=(qlResp[ty]||qlResp.ugc).map(r=>r.replace(/\{name\}/g,nm));
+document.getElementById('qlOutput').style.display='block';document.getElementById('qlOutput').innerHTML='<h3 style="margin:8px 0 6px;font-size:.8em;color:var(--teal);">Logged as '+opp.pr.toUpperCase()+' — responses:</h3>'+resps.map(r=>`<div class="rb"><button class="cp" onclick="cpTx(this)">Copy</button>${r}</div>`).join('');
+D.rHist.unshift({sc:ty,ctx:desc.substring(0,80),nm:nm,tm:new Date().toLocaleString(),resps:resps});saveD();renderOpps();renderRHist();toast('Logged + responses ready');}
+
+// RADAR
+function getRadar(){const now=new Date(),start=new Date('2026-03-12'),el=Math.max(0,(now-start)/864e5),wk=Math.min(5,Math.max(1,Math.ceil(el/7)));
+const base=[{icon:'🔥',title:'Creator content going live',hint:'Tue/Wed influencer posts. Comment within 30 mins.',resp:'Comment + reshare to Stories'},{icon:'📰',title:'news.com.au article',hint:'Dropping today or tomorrow. Amplify immediately.',resp:'Stories + reshare + comment'},{icon:'📱',title:'Customer UGC',hint:'Search #BettysBurners, #TheMadman — anyone posting attempts?',resp:'Comment + reshare best to Stories'},{icon:'🏷️',title:'Tag-a-mate activity',hint:'People tagging friends in Burners comments.',resp:'Jump in with Support Crew angle'},{icon:'🌶️',title:'Spicy food trends',hint:'Any challenge content trending on TikTok?',resp:'Stitch/Duet with Betty dare'}];
+const weekly={1:[{icon:'🎬',title:'Chadstone event content',hint:'Are creators sharing edits?',resp:'Engage every share'}],2:[{icon:'📦',title:'news.com.au office drop',hint:'Watch for video + article.',resp:'Stories + reshare + comment'},{icon:'💬',title:'First influencer UGC wave',hint:'Content engine turns on Tue/Wed.',resp:'Boost the best performer'}],3:[{icon:'🎫',title:'Voucher-dare creators posting',hint:'Did anyone accept the dare?',resp:'Comment + reshare'}],4:[{icon:'💛',title:'Human stories',hint:'Couples, friend groups, solo attempts.',resp:'Feature in mid-campaign wrap'}],5:[{icon:'⏰',title:'Last-chance urgency',hint:'FOMO content.',resp:'Amplify everything'}]};
+return [...base,...(weekly[wk]||[])];}
+function renderRadar(){const items=getRadar();document.getElementById('radarItems').innerHTML=items.map(r=>`<div class="radar-item"><h4>${r.icon} ${r.title}</h4><p>${r.hint}</p><div class="ex">→ ${r.resp}</div></div>`).join('');
+const wl=[{type:'Melbourne/Sydney food bloggers (10K–500K)',why:'Core audience',ifP:'Comment + reshare',ifN:'Voucher-dare DM'},{type:'Spicy food challenge creators',why:'Built-in audience',ifP:'Duet/Stitch',ifN:'DM dare'},{type:'Couple/friend group lifestyle',why:'Support Crew content',ifP:'Celebrate group dynamic',ifN:'Invite as crew'},{type:'Radio hosts',why:'NOVA + others',ifP:'Amplify segment',ifN:'Pitch via PR'},{type:'Comedy/reaction creators',why:'Reactions = gold',ifP:'Engage + offer more',ifN:'Voucher-dare'}];
+document.getElementById('watchList').innerHTML='<table><thead><tr><th>Account Type</th><th>Why</th><th>If They Post</th><th>If Not</th></tr></thead><tbody>'+wl.map(w=>`<tr><td><strong>${w.type}</strong></td><td class="mu">${w.why}</td><td style="font-size:.75em;">${w.ifP}</td><td style="font-size:.75em;">${w.ifN}</td></tr>`).join('')+'</tbody></table>';}
+
+// RESPONSES
+const rTpl={creator_post:["We've watched this {c} times. The moment {name} reached for the milk — iconic. 🔥🥛","This is cinema. {name}, you made the Burners the main character. Welcome to the founding crew. 👑","The reaction at 0:{ts} is seared into our memory. 🔥"],ugc:["THIS is Burners. Real reactions, real mates, real milk. Hall of Fame. 🥛👑","The face at 0:{ts} is exactly why we invented complimentary milk. 🔥","Sending this to everyone who says 'it can't be THAT hot.' 🥛"],finisher:["Pure respect and mild concern for your tastebuds tomorrow. Hall of Fame. 👑🔥","You did THE WHOLE THING. We're not crying, it's just the Reaper. 🏆🥛","Do you have a plaque preference? You've earned a permanent spot. 🔥"],tapout:["Ordering it was the power move. Tapping out is good life choices. 🥛💛","The Madman has a 100% respect rate, no matter how far you get. You showed up.","The bravery was in the first bite. 💛🥛"],nervous:["Bring your bravest mate, let us handle the milk, and remember: you do NOT have to finish it. 🥛💛","That's what the Support Crew is for! No judgement, only cheers. 🔥","Start with The Versus — work up. We'll cheer at every level. 🥛"],tag_mate:["We love a dare between mates. Make sure you BOTH try it 😂🔥","Tag accepted. Milk ready. Bring tissues. And each other. 🥛🔥","The ultimate friendship test: two Madmans, who reaches for milk first. 🤝🔥"],press:["Huge love to {name} for covering the Burners story. 🔥🥛","Thanks {name} for investigating the Madman situation. 🥛","The word is out. Thank you {name}. 🔥"],today_show:["When national TV meets the Carolina Reaper… the Reaper wins. Thanks @thetodayshow 🥛🔥","We brought the burger. They brought the bravery. 🔥","Burners just became a national conversation. Thank you TODAY. 📺🔥🥛"],not_hot:["We LOVE a heat veteran. Respect. We'll bring more next time. 🫡🔥","Incredibly impressive or slightly terrifying. Either way, respect. 🔥","The Madman bows to no one… except apparently you. 🌶️"],troll:["We appreciate the energy! The Hot Shot might be more your vibe 🥛","Noted! We'll be over here handing out milk and high-fives. 🥛💛","[HIDE if harmful. Only engage if lighthearted.]"],complaint:["We're really sorry. That's not the experience we want. DM us? 💛","Thank you for flagging — we take it seriously. Please DM us. 🙏","We hear you. DM us so our team can look into it. 💛"],competitor:["Love spice everywhere. But for the one with a waiver AND milk… you know. 🔥🥛","[Stay silent unless tagged. Let the product speak.]","Spice is having a moment. We'll be here with our Reaper. 🥛"],voucher_dare:["Hey {name} 👋 Betty's here. We've dropped the Burners — our spiciest ever. We'd love to shout you one. Only ask: bring backup. 🔥🥛","Hey {name}! Choose your drama: The Versus (warm-up), The Hot Shot (real), The Madman (waiver required). We cover burgers + milk. You cover reactions. 🥛 Keen?","Quick question {name}: how brave? The Madman requires a waiver. We'll provide the milk. 🔥🥛"],custom:["[Channel Betty's warm, cheeky energy. Reference their specific experience.]","[Keep it short and human. Mention something specific.]","[Lead with support, end with humour. Make them feel seen.]"]};
+function genResp(){const sc=document.getElementById('rScen').value,ctx=document.getElementById('rCtx').value,nm=document.getElementById('rName').value||'legend';const tpls=rTpl[sc]||rTpl.custom;const resps=tpls.map(t=>t.replace(/\{name\}/g,nm).replace(/\{c\}/g,Math.floor(Math.random()*8+3)).replace(/\{ts\}/g,Math.floor(Math.random()*50+5)));
+document.getElementById('rCards').innerHTML=resps.map(r=>`<div class="rb"><button class="cp" onclick="cpTx(this)">Copy</button>${r}</div>`).join('');document.getElementById('rOut').style.display='block';D.stats.res=(D.stats.res||0)+1;D.rHist.unshift({sc:sc,ctx:ctx.substring(0,80),nm:nm,tm:new Date().toLocaleString(),resps:resps});if(D.rHist.length>50)D.rHist=D.rHist.slice(0,50);saveD();renderRHist();toast('3 responses ready');}
+function renderRHist(){const d=document.getElementById('rHist');if(!D.rHist.length){d.innerHTML='<div class="es"><div class="em">💬</div><p>Responses appear here</p></div>';return;}d.innerHTML=D.rHist.slice(0,10).map(r=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div class="fr" style="justify-content:space-between;"><strong style="font-size:.78em;">${r.sc.replace('_',' ')} → ${r.nm}</strong><span class="mu">${r.tm}</span></div><p class="mu" style="margin-top:2px;">${r.ctx||'—'}</p></div>`).join('');}
+
+// OPPORTUNITIES
+function addOpp(){const o={id:Date.now(),pl:document.getElementById('oPl').value,pr:document.getElementById('oPr').value,desc:document.getElementById('oDe').value,ty:document.getElementById('oTy').value,ac:document.getElementById('oAc').value,st:'new',dt:new Date().toISOString().split('T')[0]};if(!o.desc){toast('Describe the opportunity');return;}D.opps.unshift(o);saveD();renderOpps();document.getElementById('oDe').value='';document.getElementById('oAc').value='';toast('Logged');}
+function renderOpps(){const d=document.getElementById('oList');if(!D.opps.length){d.innerHTML='<div class="es"><div class="em">🎯</div><p>No opportunities</p></div>';return;}d.innerHTML=D.opps.map(o=>`<div style="background:var(--dark);border-radius:3px;padding:12px;margin-bottom:6px;border-left:3px solid ${o.pr==='p1'?'var(--bad)':o.pr==='p2'?'var(--orange)':'var(--teal)'};"><div class="fr" style="justify-content:space-between;flex-wrap:wrap;"><div class="fr"><span class="tg tg-${o.pr}">${o.pr.toUpperCase()}</span><span class="tg tg-${o.st==='done'?'done':o.st==='in_progress'?'ip':'new'}">${o.st.replace('_',' ').toUpperCase()}</span><span class="mu">${o.pl}</span></div><span class="mu">${o.dt}</span></div><p style="margin:5px 0;font-size:.8em;">${o.desc}</p><p class="mu" style="font-size:.7em;">${o.ty} | ${o.ac||'—'}</p><div class="fr mt">${o.st!=='done'?`<button class="btn btn-s btn-g" onclick="oSt(${o.id},'done')">✓ Done</button>`:''} ${o.st==='new'?`<button class="btn btn-s btn-w" onclick="oSt(${o.id},'in_progress')">In Progress</button>`:''}<button class="btn btn-s btn-o" onclick="oDel(${o.id})">Remove</button></div></div>`).join('');}
+function oSt(id,s){const o=D.opps.find(x=>x.id===id);if(o){o.st=s;saveD();renderOpps();toast('Updated');}}
+function oDel(id){D.opps=D.opps.filter(x=>x.id!==id);saveD();renderOpps();toast('Removed');}
+
+// CREATORS & PR
+function renderCr(){document.getElementById('crTb').innerHTML=D.creators.map((c,i)=>`<tr><td><strong>${c.nm}</strong></td><td style="color:var(--teal);">${c.hd}</td><td>${c.pf}</td><td>${c.fl}</td><td><select onchange="D.creators[${i}].cs=this.value;saveD();" style="width:auto;padding:3px 6px;font-size:.7em;"><option value="pending" ${c.cs==='pending'?'selected':''}>Pending</option><option value="approved" ${c.cs==='approved'?'selected':''}>Approved</option><option value="posted" ${c.cs==='posted'?'selected':''}>Posted</option><option value="multiple" ${c.cs==='multiple'?'selected':''}>Multiple</option></select></td><td><select onchange="D.creators[${i}].rs=this.value;saveD();" style="width:auto;padding:3px 6px;font-size:.7em;"><option value="pending" ${c.rs==='pending'?'selected':''}>Not Yet</option><option value="commented" ${c.rs==='commented'?'selected':''}>Commented</option><option value="reshared" ${c.rs==='reshared'?'selected':''}>Reshared</option><option value="both" ${c.rs==='both'?'selected':''}>Both</option></select></td><td style="font-size:.7em;">${c.us||'—'}</td><td><button class="btn btn-s btn-t" onclick="st('resp');document.getElementById('rName').value='${c.hd}';">Draft</button></td></tr>`).join('');}
+function renderPR(){document.getElementById('prTb').innerHTML=D.pr.map((p,i)=>`<tr><td><strong>${p.out}</strong></td><td>${p.ty}</td><td>${p.dt}</td><td style="font-size:.7em;max-width:180px;">${p.sa}</td><td><input type="checkbox" ${p.dn?'checked':''} onchange="D.pr[${i}].dn=this.checked;saveD();" style="width:16px;height:16px;accent-color:var(--orange);"></td></tr>`).join('');}
+function renderWL(){document.getElementById('wlTb').innerHTML=D.wl.map((w,i)=>`<tr><td><strong>${w.out}</strong></td><td class="mu">${w.st}</td><td style="font-size:.75em;">${w.ns}</td><td><button class="btn btn-s btn-to" onclick="promWL(${i})">Promote</button></td></tr>`).join('');}
+function promWL(i){const w=D.wl[i];D.pr.push({out:w.out,ty:'Online',dt:'TBC',sa:'Share + comment',dn:false});D.wl.splice(i,1);saveD();renderPR();renderWL();toast(w.out+' promoted');}
+
+// UGC ENGINE
+function renderUGC(){document.getElementById('ugcTactics').innerHTML=D.ugcTactics.map((u,i)=>`<div class="chk ${u.done?'done':''}" onclick="D.ugcTactics[${i}].done=!D.ugcTactics[${i}].done;saveD();renderUGC();"><input type="checkbox" ${u.done?'checked':''} onclick="event.stopPropagation();D.ugcTactics[${i}].done=!D.ugcTactics[${i}].done;saveD();renderUGC();"><div><div class="ct">${u.t}</div><div class="cm">${u.owner} · ${u.due}</div></div></div>`).join('');renderVD();}
+function addVD(){const nm=document.getElementById('vdName').value,st=document.getElementById('vdSt').value;if(!nm){toast('Add handle');return;}D.vdList.push({nm:nm,st:st,dt:new Date().toLocaleDateString()});saveD();document.getElementById('vdName').value='';renderVD();toast('Added');}
+function renderVD(){document.getElementById('vdList').innerHTML=D.vdList.length?'<table><thead><tr><th>Handle</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>'+D.vdList.map((v,i)=>`<tr><td>${v.nm}</td><td><select onchange="D.vdList[${i}].st=this.value;saveD();" style="width:auto;padding:3px;font-size:.7em;"><option ${v.st==='DM Sent'?'selected':''}>DM Sent</option><option ${v.st==='Accepted'?'selected':''}>Accepted</option><option ${v.st==='Content Posted'?'selected':''}>Content Posted</option><option ${v.st==='No Reply'?'selected':''}>No Reply</option></select></td><td class="mu">${v.dt}</td><td><button class="btn btn-s btn-o" onclick="D.vdList.splice(${i},1);saveD();renderVD();">×</button></td></tr>`).join('')+'</tbody></table>':'<p class="mu">No voucher-dares sent yet</p>';}
+
+// CHECKLIST
+const dChk=[{tm:'8:00 AM',tx:'Morning scan: mentions, DMs, comments, tags'},{tm:'8:30 AM',tx:'Google Alerts check'},{tm:'9:00 AM',tx:'Perplexity scan'},{tm:'9:30 AM',tx:'Team update'},{tm:'10:00 AM',tx:'Respond to high-priority comments/DMs'},{tm:'12:00 PM',tx:'Midday: scan TikTok trending + hashtags'},{tm:'12:30 PM',tx:'Check creator posts — new content?'},{tm:'3:00 PM',tx:'Afternoon: catch lunchtime UGC'},{tm:'3:30 PM',tx:'Opportunities scan: trends, cultural moments'},{tm:'5:00 PM',tx:'End-of-day sweep'},{tm:'5:30 PM',tx:'Log daily stats'},{tm:'8:00 PM',tx:'Evening glance (optional)'}];
+const sChk=['Google Alerts: "Betty\'s Burgers", "Madman burger", "Betty\'s Burners"','Save TikTok searches: #BettysBurners, #TheMadman, #MilkMoment','Save IG hashtag follows: #BettysBurners, #MySupportCrew','Bookmark Command Centre','Respond to existing Madman launch post comments','Comment on Yahoo + Concrete Playground posts','Prepare TODAY Show content','Brief team on daily monitoring rhythm','Share Playbook with team'];
+function renderChk(){const td=new Date().toISOString().split('T')[0];if(!D.chk[td])D.chk[td]={};document.getElementById('chkItems').innerHTML=dChk.map((c,i)=>{const ck=D.chk[td][i]||false;return`<div class="chk ${ck?'done':''}" onclick="tglChk(${i})"><input type="checkbox" ${ck?'checked':''} onclick="event.stopPropagation();tglChk(${i})"><div><div class="cm">${c.tm}</div><div class="ct">${c.tx}</div></div></div>`;}).join('');}
+function tglChk(i){const td=new Date().toISOString().split('T')[0];if(!D.chk[td])D.chk[td]={};D.chk[td][i]=!D.chk[td][i];saveD();renderChk();}
+function resetChk(){const td=new Date().toISOString().split('T')[0];D.chk[td]={};saveD();renderChk();toast('Reset');}
+function renderSChk(){document.getElementById('setupItems').innerHTML=sChk.map((c,i)=>{const ck=D.sChk[i]||false;return`<div class="chk ${ck?'done':''}" onclick="tglS(${i})"><input type="checkbox" ${ck?'checked':''} onclick="event.stopPropagation();tglS(${i})"><div><div class="ct">${c}</div></div></div>`;}).join('');}
+function tglS(i){D.sChk[i]=!D.sChk[i];saveD();renderSChk();}
+
+// STATS
+function saveLog(){const e={dt:new Date().toLocaleDateString(),cm:document.getElementById('lCom').value,ug:document.getElementById('lUgc').value,cr:document.getElementById('lCre').value,pr:document.getElementById('lPre').value,rt:document.getElementById('lRt').value,se:document.getElementById('lSen').value,no:document.getElementById('lNot').value};D.logs.unshift(e);D.stats.ugc=(D.stats.ugc||0)+parseInt(e.ug||0);saveD();renderLogs();toast('Saved');}
+function renderLogs(){const d=document.getElementById('logH');if(!D.logs.length){d.innerHTML='<div class="es"><div class="em">📈</div><p>Logs build here</p></div>';return;}d.innerHTML='<table><thead><tr><th>Date</th><th>Comments</th><th>UGC</th><th>Creator</th><th>Press</th><th>Resp Time</th><th>Sentiment</th><th>Notes</th></tr></thead><tbody>'+D.logs.map(l=>`<tr><td>${l.dt}</td><td>${l.cm}</td><td>${l.ug}</td><td>${l.cr}</td><td>${l.pr}</td><td>${l.rt}m</td><td>${l.se}/10</td><td style="font-size:.7em;max-width:150px;">${l.no||'—'}</td></tr>`).join('')+'</tbody></table>';}
+
+function updDt(){document.getElementById('cDate').textContent=new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
+init();
+
+// === SYNC ENGINE ===
+const SYNC_INTERVAL = 30000; // 30 seconds
+let lastSync = null;
+let syncStatus = 'disconnected';
+
+function updateSyncUI() {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (syncStatus === 'connected') {
+    el.innerHTML = `<span style="color:var(--ok);font-size:.65em;">● Synced</span> <span style="color:var(--muted);font-size:.6em;">${lastSync ? new Date(lastSync).toLocaleTimeString() : ''}</span>`;
+  } else if (syncStatus === 'syncing') {
+    el.innerHTML = `<span style="color:var(--warn);font-size:.65em;">● Syncing...</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--muted);font-size:.65em;">● Local only</span>`;
+  }
+}
+
+async function pushData() {
+  syncStatus = 'syncing'; updateSyncUI();
+  try {
+    const resp = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(D)
+    });
+    if (resp.ok) { syncStatus = 'connected'; lastSync = Date.now(); }
+    else { syncStatus = 'disconnected'; }
+  } catch (e) { syncStatus = 'disconnected'; }
+  updateSyncUI();
+}
+
+async function pullData() {
+  try {
+    const resp = await fetch('/api/sync');
+    if (resp.ok) {
+      const remote = await resp.json();
+      if (remote && remote.opps) {
+        D = remote;
+        localStorage.setItem(SK, JSON.stringify(D));
+        syncStatus = 'connected'; lastSync = Date.now();
+        // Re-render everything
+        updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+      }
+    }
+  } catch (e) { /* silent fail — use local */ }
+  updateSyncUI();
+}
+
+// Override saveD to also push
+const _origSaveD = saveD;
+saveD = function() {
+  localStorage.setItem(SK, JSON.stringify(D));
+  updDash();
+  pushData(); // async push to server
+};
+
+// Pull on load, then every 30s
+pullData();
+setInterval(pullData, SYNC_INTERVAL);
+
+</script></body></html>
