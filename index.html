@@ -249,7 +249,22 @@ tr:hover{background:rgba(212,98,43,0.05);}
 <div class="toast" id="toast"></div>
 <script>
 const SK='burners_cc_v3';
-let D=loadD();function loadD(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return defD();}
+let D=loadD();function loadD(){
+  try{
+    const s=localStorage.getItem(SK);
+    if(s){
+      const d=JSON.parse(s);
+      // Sanity check: if _lastModified is more than 1 day in the future, it's a corrupt/test timestamp
+      // Reset it to 0 so the remote Gist can seed correctly
+      if(d._lastModified && d._lastModified > Date.now() + 86400000){
+        d._lastModified = 0;
+        localStorage.setItem(SK, JSON.stringify(d));
+      }
+      return d;
+    }
+  }catch(e){}
+  return defD();
+}
 function saveD(){
   D._lastModified = Date.now();
   localStorage.setItem(SK,JSON.stringify(D));
@@ -512,17 +527,17 @@ function updDt(){document.getElementById('cDate').textContent=new Date().toLocal
 function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
 // init() is called by startApp() after initial pull
 
-// === SYNC ENGINE v4 — Pull-First, Strict Timestamp Wins ===
+// === SYNC ENGINE v5 — Strict Timestamp Wins, Always ===
 // Rule: remote only overwrites local if remoteTs is STRICTLY greater than localTs.
-// This means: after you push a change (setting D._lastModified = Date.now()),
-// the next pull will see remoteTs === localTs and will NOT overwrite your data.
-// A teammate's change will have a higher remoteTs and WILL update your view.
+// On first load: if local has data (localTs > 0), only accept remote if newer.
+//               if local is empty (localTs === 0), accept remote to seed the app.
+// This ensures: user changes always persist through sync cycles.
+// Cross-tab sync: teammate changes (higher remoteTs) propagate correctly.
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
 let _syncStatus = 'disconnected';
 let _pendingPush = false;
 let _appStarted = false;
-let _initialPullDone = false;
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
@@ -575,28 +590,27 @@ async function pullData() {
         const remoteTs = remote._lastModified || 0;
         const localTs = D._lastModified || 0;
 
-        if (!_initialPullDone) {
-          // First load: always accept remote data to ensure fresh start
-          _initialPullDone = true;
+        if (remoteTs > localTs) {
+          // Remote is strictly newer — accept it (teammate change or first load with no local data)
           D = remote;
           localStorage.setItem(SK, JSON.stringify(D));
           _syncStatus = 'connected'; lastSync = Date.now();
           startApp(true);
-        } else if (remoteTs > localTs) {
-          // A teammate made a newer change — update local view
+        } else if (localTs === 0) {
+          // Local has no timestamp (brand new user) — accept remote to seed
           D = remote;
           localStorage.setItem(SK, JSON.stringify(D));
           _syncStatus = 'connected'; lastSync = Date.now();
           startApp(true);
         } else {
-          // Local is same age or newer (our own recent change) — keep local
+          // Local is same age or newer — keep local data
           _syncStatus = 'connected'; lastSync = Date.now();
+          if (!_appStarted) startApp(false);
           // If local is strictly newer than remote, push our changes
           if (localTs > remoteTs) { _pendingPush = true; pushData(); }
         }
       } else {
         // Remote is empty — use local data and push it to seed remote
-        _initialPullDone = true;
         _syncStatus = 'connected'; lastSync = Date.now();
         startApp(false);
         _pendingPush = true; pushData();
