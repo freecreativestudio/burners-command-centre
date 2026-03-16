@@ -250,7 +250,12 @@ tr:hover{background:rgba(212,98,43,0.05);}
 <script>
 const SK='burners_cc_v3';
 let D=loadD();function loadD(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return defD();}
-function saveD(){localStorage.setItem(SK,JSON.stringify(D));updDash();pushData();}
+function saveD(){
+  D._lastModified = Date.now();
+  localStorage.setItem(SK,JSON.stringify(D));
+  updDash();
+  _pendingPush = true;
+}
 function defD(){return{
 opps:[
 {id:1,pl:'TikTok',pr:'p2',desc:'Yahoo Australia TikTok — Madman taste-test',ty:'Amplify',ac:'Comment + Duet',st:'new',dt:'2026-03-13'},
@@ -507,16 +512,21 @@ function updDt(){document.getElementById('cDate').textContent=new Date().toLocal
 function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
 init();
 
-// === SYNC ENGINE ===
+// === SYNC ENGINE v2 ===
+// Strategy: Remote wins if it has a newer _lastModified timestamp.
+// Push only happens after explicit user saves (not on page load).
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
 let _syncStatus = 'disconnected';
+let _pendingPush = false;
+let _initialPullDone = false;
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
   if (!el) return;
   if (_syncStatus === 'connected') {
-    el.innerHTML = '<span style="color:#4ade80;font-size:.65em;">● Synced ' + (lastSync ? new Date(lastSync).toLocaleTimeString() : '') + '</span>';
+    const t = lastSync ? new Date(lastSync).toLocaleTimeString() : '';
+    el.innerHTML = '<span style="color:#4ade80;font-size:.65em;">● Synced ' + t + '</span>';
   } else if (_syncStatus === 'syncing') {
     el.innerHTML = '<span style="color:#fbbf24;font-size:.65em;">● Syncing...</span>';
   } else {
@@ -525,6 +535,8 @@ function updateSyncUI() {
 }
 
 async function pushData() {
+  if (!_pendingPush) return;
+  _pendingPush = false;
   _syncStatus = 'syncing'; updateSyncUI();
   try {
     const resp = await fetch('/api/sync', {
@@ -533,8 +545,8 @@ async function pushData() {
       body: JSON.stringify(D)
     });
     if (resp.ok) { _syncStatus = 'connected'; lastSync = Date.now(); }
-    else { _syncStatus = 'disconnected'; }
-  } catch (e) { _syncStatus = 'disconnected'; }
+    else { _syncStatus = 'disconnected'; _pendingPush = true; }
+  } catch (e) { _syncStatus = 'disconnected'; _pendingPush = true; }
   updateSyncUI();
 }
 
@@ -544,18 +556,37 @@ async function pullData() {
     if (resp.ok) {
       const remote = await resp.json();
       if (remote && remote.opps && remote.opps.length > 0) {
-        D = remote;
-        localStorage.setItem(SK, JSON.stringify(D));
-        _syncStatus = 'connected'; lastSync = Date.now();
-        updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+        // Accept remote if: first pull ever, OR remote is newer than local
+        const remoteTs = remote._lastModified || 0;
+        const localTs = D._lastModified || 0;
+        if (!_initialPullDone || remoteTs > localTs) {
+          D = remote;
+          localStorage.setItem(SK, JSON.stringify(D));
+          _initialPullDone = true;
+          _syncStatus = 'connected'; lastSync = Date.now();
+          // Re-render everything
+          updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+        } else {
+          _initialPullDone = true;
+          _syncStatus = 'connected'; lastSync = Date.now();
+          // Push local if it's newer
+          if (localTs > remoteTs) { _pendingPush = true; pushData(); }
+        }
       } else {
+        // Remote is empty — push local data to seed it
+        _initialPullDone = true;
         _syncStatus = 'connected'; lastSync = Date.now();
+        _pendingPush = true; pushData();
       }
     }
   } catch (e) { /* silent fail */ }
   updateSyncUI();
 }
 
+// Push pending changes every 5 seconds
+setInterval(() => { if (_pendingPush) pushData(); }, 5000);
+
+// Pull on load, then every 30s
 pullData();
 setInterval(pullData, SYNC_INTERVAL);
 </script></body></html>
