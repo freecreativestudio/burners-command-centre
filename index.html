@@ -527,17 +527,18 @@ function updDt(){document.getElementById('cDate').textContent=new Date().toLocal
 function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
 // init() is called by startApp() after initial pull
 
-// === SYNC ENGINE v5 — Strict Timestamp Wins, Always ===
-// Rule: remote only overwrites local if remoteTs is STRICTLY greater than localTs.
-// On first load: if local has data (localTs > 0), only accept remote if newer.
-//               if local is empty (localTs === 0), accept remote to seed the app.
-// This ensures: user changes always persist through sync cycles.
-// Cross-tab sync: teammate changes (higher remoteTs) propagate correctly.
+// === SYNC ENGINE v6 — Server-Side Timestamps ===
+// The server stamps every write with _serverTs = Date.now().
+// Clients track the last known _serverTs they received from the server.
+// On pull: if remote._serverTs > _lastKnownServerTs, remote is newer — accept it.
+// On push: server stamps the data, client stores the returned _serverTs.
+// This prevents clients from forging timestamps and causing overwrite loops.
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
 let _syncStatus = 'disconnected';
 let _pendingPush = false;
 let _appStarted = false;
+let _lastKnownServerTs = parseInt(localStorage.getItem(SK+'_sts') || '0');
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
@@ -551,20 +552,17 @@ function updateSyncUI() {
     el.innerHTML = '<span style="color:#6b7280;font-size:.65em;">● Local only</span>';
   }
 }
-
 function renderAll() {
   updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
 }
-
 function startApp(fromRemote) {
   if (!_appStarted) {
     _appStarted = true;
-    init();  // runs updDt, setInterval, and all renders
+    init();
   } else if (fromRemote) {
-    renderAll();  // re-render with updated remote data
+    renderAll();
   }
 }
-
 async function pushData() {
   if (!_pendingPush) return;
   _pendingPush = false;
@@ -575,65 +573,60 @@ async function pushData() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(D)
     });
-    if (resp.ok) { _syncStatus = 'connected'; lastSync = Date.now(); }
-    else { _syncStatus = 'disconnected'; _pendingPush = true; }
+    if (resp.ok) {
+      const result = await resp.json();
+      if (result._serverTs) {
+        _lastKnownServerTs = result._serverTs;
+        localStorage.setItem(SK+'_sts', String(_lastKnownServerTs));
+      }
+      _syncStatus = 'connected'; lastSync = Date.now();
+    } else {
+      _syncStatus = 'disconnected'; _pendingPush = true;
+    }
   } catch (e) { _syncStatus = 'disconnected'; _pendingPush = true; }
   updateSyncUI();
 }
-
 async function pullData() {
   try {
     const resp = await fetch('/api/sync');
     if (resp.ok) {
       const remote = await resp.json();
       if (remote && remote.opps && remote.opps.length > 0) {
-        const remoteTs = remote._lastModified || 0;
-        const localTs = D._lastModified || 0;
-
-        if (remoteTs > localTs) {
-          // Remote is strictly newer — accept it (teammate change or first load with no local data)
+        const remoteServerTs = remote._serverTs || 0;
+        if (remoteServerTs > _lastKnownServerTs) {
+          // Server has newer data (teammate pushed a change) — accept it
           D = remote;
           localStorage.setItem(SK, JSON.stringify(D));
-          _syncStatus = 'connected'; lastSync = Date.now();
-          startApp(true);
-        } else if (localTs === 0) {
-          // Local has no timestamp (brand new user) — accept remote to seed
-          D = remote;
-          localStorage.setItem(SK, JSON.stringify(D));
+          _lastKnownServerTs = remoteServerTs;
+          localStorage.setItem(SK+'_sts', String(_lastKnownServerTs));
           _syncStatus = 'connected'; lastSync = Date.now();
           startApp(true);
         } else {
-          // Local is same age or newer — keep local data
+          // We already have this version or newer — keep local
           _syncStatus = 'connected'; lastSync = Date.now();
           if (!_appStarted) startApp(false);
-          // If local is strictly newer than remote, push our changes
-          if (localTs > remoteTs) { _pendingPush = true; pushData(); }
+          if (_pendingPush) pushData();
         }
       } else {
-        // Remote is empty — use local data and push it to seed remote
+        // Remote is empty — use local data and push to seed remote
         _syncStatus = 'connected'; lastSync = Date.now();
         startApp(false);
         _pendingPush = true; pushData();
       }
     } else {
-      // API error — use local data
       _syncStatus = 'disconnected';
       if (!_appStarted) startApp(false);
     }
   } catch (e) {
-    // Network error — use local data
     _syncStatus = 'disconnected';
     if (!_appStarted) startApp(false);
   }
   updateSyncUI();
 }
-
 // Push pending changes every 5 seconds
 setInterval(() => { if (_pendingPush) pushData(); }, 5000);
-
-// Initial pull — this triggers startApp() which calls init()
+// Initial pull — triggers startApp() which calls init()
 pullData();
-
 // Periodic pull every 30s
 setInterval(pullData, SYNC_INTERVAL);
 </script></body></html>

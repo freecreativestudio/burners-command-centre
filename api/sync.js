@@ -33,7 +33,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const content = JSON.stringify(req.body);
+      // Server stamps the write time — clients cannot forge this
+      const body = req.body;
+      body._serverTs = Date.now();
+
+      const content = JSON.stringify(body);
       const resp = await fetch(BASE, {
         method: 'PATCH',
         headers,
@@ -44,7 +48,7 @@ export default async function handler(req, res) {
         })
       });
       if (resp.ok) {
-        return res.status(200).json({ ok: true });
+        return res.status(200).json({ ok: true, _serverTs: body._serverTs });
       } else {
         const err = await resp.text();
         return res.status(500).json({ error: err });
