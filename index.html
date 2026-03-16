@@ -94,7 +94,7 @@ tr:hover{background:rgba(212,98,43,0.05);}
 </style>
 </head>
 <body>
-<div class="hdr"><div class="hdr-row"><div><div class="hdr-title"><span>Burners</span> Command Centre</div><div class="hdr-sub">free.studio × Betty's Burgers | Campaign Hub | 12 Mar – 19 Apr 2026</div></div><div class="fr"><span class="live">● Live</span><span id="syncStatus" style="margin-left:8px;"></span><span style="color:var(--muted);font-size:.7em;margin-left:8px;" id="cDate"></span></div></div></div>
+<div class="hdr"><div class="hdr-row"><div><div class="hdr-title"><span>Burners</span> Command Centre</div><div class="hdr-sub">free.studio × Betty's Burgers | Campaign Hub | 12 Mar – 19 Apr 2026</div></div><div class="fr"><span class="live">● Live</span><span id="syncStatus" style="margin-left:8px;"></span><span style="color:var(--muted);font-size:.7em;" id="cDate"></span></div></div></div>
 <div class="nav" id="nv">
 <button class="on" onclick="st('dash')">Dashboard</button>
 <button onclick="st('plan')">Week Plan</button>
@@ -249,28 +249,8 @@ tr:hover{background:rgba(212,98,43,0.05);}
 <div class="toast" id="toast"></div>
 <script>
 const SK='burners_cc_v3';
-let D=loadD();function loadD(){
-  try{
-    const s=localStorage.getItem(SK);
-    if(s){
-      const d=JSON.parse(s);
-      // Sanity check: if _lastModified is more than 1 day in the future, it's a corrupt/test timestamp
-      // Reset it to 0 so the remote Gist can seed correctly
-      if(d._lastModified && d._lastModified > Date.now() + 86400000){
-        d._lastModified = 0;
-        localStorage.setItem(SK, JSON.stringify(d));
-      }
-      return d;
-    }
-  }catch(e){}
-  return defD();
-}
-function saveD(){
-  D._lastModified = Date.now();
-  localStorage.setItem(SK,JSON.stringify(D));
-  updDash();
-  _pendingPush = true;
-}
+let D=loadD();function loadD(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return defD();}
+function saveD(){localStorage.setItem(SK,JSON.stringify(D));updDash();_isDirty=true;if(typeof pushData==='function')pushData();}
 function defD(){return{
 opps:[
 {id:1,pl:'TikTok',pr:'p2',desc:'Yahoo Australia TikTok — Madman taste-test',ty:'Amplify',ac:'Comment + Duet',st:'new',dt:'2026-03-13'},
@@ -527,18 +507,23 @@ function updDt(){document.getElementById('cDate').textContent=new Date().toLocal
 function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
 // init() is called by startApp() after initial pull
 
-// === SYNC ENGINE v6 — Server-Side Timestamps ===
-// The server stamps every write with _serverTs = Date.now().
-// Clients track the last known _serverTs they received from the server.
-// On pull: if remote._serverTs > _lastKnownServerTs, remote is newer — accept it.
-// On push: server stamps the data, client stores the returned _serverTs.
-// This prevents clients from forging timestamps and causing overwrite loops.
+// === SYNC ENGINE v7 — Definitive ===
+// Rules:
+// 1. Server stamps every write with _serverTs (server-assigned, cannot be faked by client)
+// 2. Client stores _lastKnownServerTs in localStorage after every successful pull/push
+// 3. _isDirty = true when user has made changes not yet confirmed pushed to server
+// 4. pullData() NEVER overwrites local data when _isDirty = true
+// 5. pullData() only accepts remote data when remote._serverTs > _lastKnownServerTs
+// 6. saveD() calls pushData() immediately (no delay)
+// 7. pushData() retries every 5s on failure
+
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
 let _syncStatus = 'disconnected';
-let _pendingPush = false;
+let _isDirty = false;
+let _isPushing = false;
 let _appStarted = false;
-let _lastKnownServerTs = parseInt(localStorage.getItem(SK+'_sts') || '0');
+let _lastKnownServerTs = parseInt(localStorage.getItem('burners_cc_v3_sts') || '0');
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
@@ -552,9 +537,13 @@ function updateSyncUI() {
     el.innerHTML = '<span style="color:#6b7280;font-size:.65em;">● Local only</span>';
   }
 }
+
 function renderAll() {
-  updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+  updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();
+  renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();
+  renderChk();renderSChk();renderRHist();renderLogs();
 }
+
 function startApp(fromRemote) {
   if (!_appStarted) {
     _appStarted = true;
@@ -563,70 +552,79 @@ function startApp(fromRemote) {
     renderAll();
   }
 }
+
 async function pushData() {
-  if (!_pendingPush) return;
-  _pendingPush = false;
+  if (_isPushing) return;
+  _isPushing = true;
   _syncStatus = 'syncing'; updateSyncUI();
   try {
     const resp = await fetch('/api/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(D)
     });
     if (resp.ok) {
       const result = await resp.json();
       if (result._serverTs) {
         _lastKnownServerTs = result._serverTs;
-        localStorage.setItem(SK+'_sts', String(_lastKnownServerTs));
+        localStorage.setItem('burners_cc_v3_sts', String(_lastKnownServerTs));
       }
+      _isDirty = false;
       _syncStatus = 'connected'; lastSync = Date.now();
     } else {
-      _syncStatus = 'disconnected'; _pendingPush = true;
+      _isDirty = true;
+      _syncStatus = 'disconnected';
     }
-  } catch (e) { _syncStatus = 'disconnected'; _pendingPush = true; }
+  } catch(e) {
+    _isDirty = true;
+    _syncStatus = 'disconnected';
+  }
+  _isPushing = false;
   updateSyncUI();
 }
+
 async function pullData() {
+  if (_isDirty) { pushData(); return; } // push pending changes first
   try {
     const resp = await fetch('/api/sync');
     if (resp.ok) {
       const remote = await resp.json();
       if (remote && remote.opps && remote.opps.length > 0) {
-        const remoteServerTs = remote._serverTs || 0;
-        if (remoteServerTs > _lastKnownServerTs) {
-          // Server has newer data (teammate pushed a change) — accept it
+        const remoteTs = remote._serverTs || 0;
+        if (remoteTs > _lastKnownServerTs) {
+          // Teammate made a change — accept it
           D = remote;
-          localStorage.setItem(SK, JSON.stringify(D));
-          _lastKnownServerTs = remoteServerTs;
-          localStorage.setItem(SK+'_sts', String(_lastKnownServerTs));
+          localStorage.setItem('burners_cc_v3', JSON.stringify(D));
+          _lastKnownServerTs = remoteTs;
+          localStorage.setItem('burners_cc_v3_sts', String(_lastKnownServerTs));
+          _isDirty = false;
           _syncStatus = 'connected'; lastSync = Date.now();
           startApp(true);
         } else {
-          // We already have this version or newer — keep local
           _syncStatus = 'connected'; lastSync = Date.now();
           if (!_appStarted) startApp(false);
-          if (_pendingPush) pushData();
         }
       } else {
-        // Remote is empty — use local data and push to seed remote
+        // Remote empty — seed with local data
         _syncStatus = 'connected'; lastSync = Date.now();
-        startApp(false);
-        _pendingPush = true; pushData();
+        if (!_appStarted) startApp(false);
+        _isDirty = true; pushData();
       }
     } else {
       _syncStatus = 'disconnected';
       if (!_appStarted) startApp(false);
     }
-  } catch (e) {
+  } catch(e) {
     _syncStatus = 'disconnected';
     if (!_appStarted) startApp(false);
   }
   updateSyncUI();
 }
-// Push pending changes every 5 seconds
-setInterval(() => { if (_pendingPush) pushData(); }, 5000);
-// Initial pull — triggers startApp() which calls init()
+
+setInterval(() => { if (_isDirty && !_isPushing) pushData(); }, 5000);
 pullData();
-// Periodic pull every 30s
 setInterval(pullData, SYNC_INTERVAL);
-</script></body></html>
+
+</script>
+</body>
+</html>
