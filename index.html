@@ -516,6 +516,19 @@ function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDep
 // 5. pullData() only accepts remote data when remote._serverTs > _lastKnownServerTs
 // 6. saveD() calls pushData() immediately (no delay)
 // 7. pushData() retries every 5s on failure
+// 8. ?reset=1 URL param clears all local state and forces fresh pull from server
+
+// Handle ?reset=1 — clear all local state before anything else runs
+(function(){
+  if (new URLSearchParams(window.location.search).get('reset') === '1') {
+    localStorage.removeItem('burners_cc_v3');
+    localStorage.removeItem('burners_cc_v3_sts');
+    // Remove the ?reset=1 from URL without reloading
+    const url = new URL(window.location.href);
+    url.searchParams.delete('reset');
+    window.history.replaceState({}, '', url.toString());
+  }
+})();
 
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
