@@ -510,16 +510,14 @@ function renderLogs(){const d=document.getElementById('logH');if(!D.logs.length)
 
 function updDt(){document.getElementById('cDate').textContent=new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
 function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();}
-init();
+// init() is called by startApp() after initial pull
 
-// === SYNC ENGINE v2 ===
-// Strategy: Remote wins if it has a newer _lastModified timestamp.
-// Push only happens after explicit user saves (not on page load).
+// === SYNC ENGINE v3 — Pull-First, Then Init ===
 const SYNC_INTERVAL = 30000;
 let lastSync = null;
 let _syncStatus = 'disconnected';
 let _pendingPush = false;
-let _initialPullDone = false;
+let _appStarted = false;
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
@@ -531,6 +529,19 @@ function updateSyncUI() {
     el.innerHTML = '<span style="color:#fbbf24;font-size:.65em;">● Syncing...</span>';
   } else {
     el.innerHTML = '<span style="color:#6b7280;font-size:.65em;">● Local only</span>';
+  }
+}
+
+function renderAll() {
+  updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+}
+
+function startApp(fromRemote) {
+  if (!_appStarted) {
+    _appStarted = true;
+    init();  // runs updDt, setInterval, and all renders
+  } else if (fromRemote) {
+    renderAll();  // re-render with updated remote data
   }
 }
 
@@ -556,37 +567,45 @@ async function pullData() {
     if (resp.ok) {
       const remote = await resp.json();
       if (remote && remote.opps && remote.opps.length > 0) {
-        // Accept remote if: first pull ever, OR remote is newer than local
         const remoteTs = remote._lastModified || 0;
         const localTs = D._lastModified || 0;
-        if (!_initialPullDone || remoteTs > localTs) {
+        if (remoteTs >= localTs) {
+          // Remote is same age or newer — use it
           D = remote;
           localStorage.setItem(SK, JSON.stringify(D));
-          _initialPullDone = true;
           _syncStatus = 'connected'; lastSync = Date.now();
-          // Re-render everything
-          updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+          startApp(true);
         } else {
-          _initialPullDone = true;
+          // Local is newer — keep local, push to remote
           _syncStatus = 'connected'; lastSync = Date.now();
-          // Push local if it's newer
-          if (localTs > remoteTs) { _pendingPush = true; pushData(); }
+          startApp(false);
+          _pendingPush = true; pushData();
         }
       } else {
-        // Remote is empty — push local data to seed it
-        _initialPullDone = true;
+        // Remote is empty — use local data and push it
         _syncStatus = 'connected'; lastSync = Date.now();
+        startApp(false);
         _pendingPush = true; pushData();
       }
+    } else {
+      // API error — use local data
+      _syncStatus = 'disconnected';
+      startApp(false);
     }
-  } catch (e) { /* silent fail */ }
+  } catch (e) {
+    // Network error — use local data
+    _syncStatus = 'disconnected';
+    startApp(false);
+  }
   updateSyncUI();
 }
 
 // Push pending changes every 5 seconds
 setInterval(() => { if (_pendingPush) pushData(); }, 5000);
 
-// Pull on load, then every 30s
+// Initial pull — this triggers startApp() which calls init()
 pullData();
+
+// Periodic pull every 30s
 setInterval(pullData, SYNC_INTERVAL);
 </script></body></html>
