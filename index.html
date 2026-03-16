@@ -94,7 +94,7 @@ tr:hover{background:rgba(212,98,43,0.05);}
 </style>
 </head>
 <body>
-<div class="hdr"><div class="hdr-row"><div><div class="hdr-title"><span>Burners</span> Command Centre</div><div class="hdr-sub">free.studio × Betty's Burgers | Campaign Hub | 12 Mar – 19 Apr 2026</div></div><div class="fr"><span class="live">● Live</span><span id="syncStatus" style="margin-right:8px;"></span><span style="color:var(--muted);font-size:.7em;" id="cDate"></span></div></div></div>
+<div class="hdr"><div class="hdr-row"><div><div class="hdr-title"><span>Burners</span> Command Centre</div><div class="hdr-sub">free.studio × Betty's Burgers | Campaign Hub | 12 Mar – 19 Apr 2026</div></div><div class="fr"><span class="live">● Live</span><span id="syncStatus" style="margin-left:8px;"></span><span style="color:var(--muted);font-size:.7em;margin-left:8px;" id="cDate"></span></div></div></div>
 <div class="nav" id="nv">
 <button class="on" onclick="st('dash')">Dashboard</button>
 <button onclick="st('plan')">Week Plan</button>
@@ -250,7 +250,7 @@ tr:hover{background:rgba(212,98,43,0.05);}
 <script>
 const SK='burners_cc_v3';
 let D=loadD();function loadD(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return defD();}
-function saveD(){localStorage.setItem(SK,JSON.stringify(D));updDash();}
+function saveD(){localStorage.setItem(SK,JSON.stringify(D));updDash();pushData();}
 function defD(){return{
 opps:[
 {id:1,pl:'TikTok',pr:'p2',desc:'Yahoo Australia TikTok — Madman taste-test',ty:'Amplify',ac:'Comment + Duet',st:'new',dt:'2026-03-13'},
@@ -508,33 +508,33 @@ function init(){updDt();setInterval(updDt,60000);updDash();renderCal();renderDep
 init();
 
 // === SYNC ENGINE ===
-const SYNC_INTERVAL = 30000; // 30 seconds
+const SYNC_INTERVAL = 30000;
 let lastSync = null;
-let syncStatus = 'disconnected';
+let _syncStatus = 'disconnected';
 
 function updateSyncUI() {
   const el = document.getElementById('syncStatus');
   if (!el) return;
-  if (syncStatus === 'connected') {
-    el.innerHTML = `<span style="color:var(--ok);font-size:.65em;">● Synced</span> <span style="color:var(--muted);font-size:.6em;">${lastSync ? new Date(lastSync).toLocaleTimeString() : ''}</span>`;
-  } else if (syncStatus === 'syncing') {
-    el.innerHTML = `<span style="color:var(--warn);font-size:.65em;">● Syncing...</span>`;
+  if (_syncStatus === 'connected') {
+    el.innerHTML = '<span style="color:#4ade80;font-size:.65em;">● Synced ' + (lastSync ? new Date(lastSync).toLocaleTimeString() : '') + '</span>';
+  } else if (_syncStatus === 'syncing') {
+    el.innerHTML = '<span style="color:#fbbf24;font-size:.65em;">● Syncing...</span>';
   } else {
-    el.innerHTML = `<span style="color:var(--muted);font-size:.65em;">● Local only</span>`;
+    el.innerHTML = '<span style="color:#6b7280;font-size:.65em;">● Local only</span>';
   }
 }
 
 async function pushData() {
-  syncStatus = 'syncing'; updateSyncUI();
+  _syncStatus = 'syncing'; updateSyncUI();
   try {
     const resp = await fetch('/api/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(D)
     });
-    if (resp.ok) { syncStatus = 'connected'; lastSync = Date.now(); }
-    else { syncStatus = 'disconnected'; }
-  } catch (e) { syncStatus = 'disconnected'; }
+    if (resp.ok) { _syncStatus = 'connected'; lastSync = Date.now(); }
+    else { _syncStatus = 'disconnected'; }
+  } catch (e) { _syncStatus = 'disconnected'; }
   updateSyncUI();
 }
 
@@ -543,28 +543,19 @@ async function pullData() {
     const resp = await fetch('/api/sync');
     if (resp.ok) {
       const remote = await resp.json();
-      if (remote && remote.opps) {
+      if (remote && remote.opps && remote.opps.length > 0) {
         D = remote;
         localStorage.setItem(SK, JSON.stringify(D));
-        syncStatus = 'connected'; lastSync = Date.now();
-        // Re-render everything
+        _syncStatus = 'connected'; lastSync = Date.now();
         updDash();renderCal();renderDepts();renderTasks();renderBudget();renderScan();renderRadar();renderOpps();renderCr();renderPR();renderWL();renderUGC();renderChk();renderSChk();renderRHist();renderLogs();
+      } else {
+        _syncStatus = 'connected'; lastSync = Date.now();
       }
     }
-  } catch (e) { /* silent fail — use local */ }
+  } catch (e) { /* silent fail */ }
   updateSyncUI();
 }
 
-// Override saveD to also push
-const _origSaveD = saveD;
-saveD = function() {
-  localStorage.setItem(SK, JSON.stringify(D));
-  updDash();
-  pushData(); // async push to server
-};
-
-// Pull on load, then every 30s
 pullData();
 setInterval(pullData, SYNC_INTERVAL);
-
 </script></body></html>
